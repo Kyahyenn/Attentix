@@ -9,8 +9,8 @@
     'https://*.zoom.us/wc/*'
   ];
 
-  // Google Meet room codes look like abc-defg-hij. This excludes /landing, /new, /lookup/..., etc.
-  const MEET_RE = /^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}(?:[/?#]|$)/i;
+  // Google Meet room codes look like abc-defg-hij, also reachable as /meet/abc-defg-hij. This excludes /landing, /new, /lookup/..., etc.
+  const MEET_RE = /^https:\/\/meet\.google\.com\/(?:meet\/)?[a-z]{3}-[a-z]{4}-[a-z]{3}(?:[/?#]|$)/i;
   // Zoom web client: /wc/<9-11 digit id>/join|start, or the older /wc/join/<id>.
   const ZOOM_RE = /^https:\/\/(?:[a-z0-9-]+\.)?zoom\.us\/wc\/(?:(?:join|start)\/)?\d{9,11}(?:[/?#]|$)/i;
 
