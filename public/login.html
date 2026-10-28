@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Educator sign in · Attentix</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/js/a11y.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <main id="main" class="container narrow">
+    <div class="auth-title">
+      <a class="auth-brand" href="/login.html" aria-label="Attentix"><span class="brand-mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span></a>
+      <h1>Attentix</h1>
+      <p class="muted">Educator sign in</p>
+    </div>
+    <p id="deletedNotice" class="notice hidden" role="status">Your account and its data were deleted.</p>
+    <noscript><p class="notice notice-warn">This app needs JavaScript. Please enable it to sign in.</p></noscript>
+
+    <section class="card" aria-labelledby="signInTitle">
+      <h2 id="signInTitle">Sign in</h2>
+      <form id="loginForm" novalidate>
+        <p id="loginError" class="error" role="alert"></p>
+
+        <label class="field-label" for="loginEmail">Email</label>
+        <input id="loginEmail" type="email" placeholder="name@school.edu" autocomplete="username" aria-describedby="loginEmailError" required />
+        <p id="loginEmailError" class="field-error" hidden></p>
+
+        <label class="field-label" for="loginPassword">Password</label>
+        <div class="input-with-button">
+          <input id="loginPassword" type="password" autocomplete="current-password" aria-describedby="loginPasswordError" required />
+          <button type="button" class="btn btn-ghost show-password" data-target="loginPassword" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+        <p id="loginPasswordError" class="field-error" hidden></p>
+
+        <div class="button-row"><button id="loginBtn" type="submit" class="btn btn-primary">Sign in</button></div>
+      </form>
+      <p class="muted small">Teaching a class for the first time? <a href="/educator-signup.html">Create an educator account</a>.</p>
+    </section>
+
+    <aside class="notice" id="studentNote" aria-labelledby="studentNoteTitle">
+      <h2 id="studentNoteTitle" class="notice-title">Are you a student?</h2>
+      <p><strong>Students: No password needed!</strong> Join directly via the Attentix browser extension, or view your optional dashboard on the <a href="/join.html">Join page</a>.</p>
+      <p class="small">Before anything is monitored you are asked for consent. Read exactly what is collected in the <a href="/privacy.html?preview=1">privacy notice</a> first.</p>
+    </aside>
+  </main>
+  <script src="/js/common.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>

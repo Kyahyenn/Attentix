@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>My dashboard · Attentix</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/js/a11y.js"></script>
+</head>
+<body class="has-tabs">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M2.5 5.5C5 4 8.5 4 12 6c3.5-2 7-2 9.5-.5v13.5c-2.5-1.5-6-1.5-9.5.5-3.5-2-7-2-9.5-.5z"/><path d="M12 6v13.5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M3 6h9M16 6h5M3 12h3M10 12h11M3 18h11M18 18h3"/><circle cx="14" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></symbol>
+  </svg>
+
+  <header class="app-header no-print">
+    <div class="app-header-inner">
+      <a class="brand" href="/student.html" aria-label="Attentix home">
+        <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-target"/></svg></span>
+        <span class="brand-name">Attentix</span>
+      </a>
+
+      <nav class="app-tabs" id="appNav" aria-label="Main">
+        <button class="tab" role="tab" type="button" id="tab-home" data-tab="home" aria-controls="panel-home" aria-selected="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Home</span>
+        </button>
+        <button class="tab" role="tab" type="button" id="tab-classes" data-tab="classes" aria-controls="panel-classes" aria-selected="false" tabindex="-1">
+          <svg class="icon" aria-hidden="true"><use href="#i-book"/></svg><span>Classes</span>
+        </button>
+        <button class="tab" role="tab" type="button" id="tab-settings" data-tab="settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1">
+          <svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg><span>Settings</span>
+        </button>
+      </nav>
+
+      <div class="header-end">
+        <span class="header-user" id="userName">Loading…</span>
+        <button id="signOutBtn" class="btn btn-header btn-small hidden" type="button">Sign out of this browser</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="app-main">
+    <p id="sessionNotice" class="notice notice-warn hidden" role="alert"></p>
+    <noscript><p class="notice notice-warn">This page needs JavaScript. Please enable it.</p></noscript>
+    <p id="pageLoading" class="loading-row" role="status"><span class="spinner" aria-hidden="true"></span><span>Loading your dashboard…</span></p>
+
+    <!-- No token: passwordless lookup. Full name + email + class code, nothing else. -->
+    <section id="lookupSection" class="card hidden" aria-labelledby="lookupTitle">
+      <h2 id="lookupTitle" tabindex="-1">Find your dashboard</h2>
+      <p class="muted">No password. Enter the details you joined with. Tip: open this page from the browser extension and you are signed in automatically.</p>
+      <form id="lookupForm" novalidate>
+        <p id="lookupFormError" class="error" role="alert"></p>
+
+        <label class="field-label" for="lookupName">Full name</label>
+        <input id="lookupName" type="text" autocomplete="name" aria-describedby="lookupNameError" required />
+        <p id="lookupNameError" class="field-error" hidden></p>
+
+        <label class="field-label" for="lookupEmail">Email</label>
+        <input id="lookupEmail" type="email" placeholder="name@school.edu" autocomplete="email" aria-describedby="lookupEmailError" required />
+        <p id="lookupEmailError" class="field-error" hidden></p>
+
+        <label class="field-label" for="lookupClassCode">Class code</label>
+        <input id="lookupClassCode" class="code-input" type="text" placeholder="Example: ABC234" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="lookupClassCodeError" required />
+        <p id="lookupClassCodeError" class="field-error" hidden></p>
+
+        <div class="button-row">
+          <button id="lookupBtn" type="submit" class="btn btn-primary">Show my dashboard</button>
+          <a id="joinInsteadLink" class="btn btn-secondary" href="/join.html">I haven’t joined yet</a>
+        </div>
+      </form>
+    </section>
+
+    <div id="dashboard" class="hidden">
+      <!-- ===================== HOME ===================== -->
+      <section id="panel-home" class="tab-panel" role="tabpanel" aria-labelledby="tab-home">
+        <div class="page-head">
+          <div>
+            <h1>My attentiveness</h1>
+            <p class="page-sub">What your educator sees, updated live. <a href="#privacyControls">Privacy &amp; consent</a></p>
+          </div>
+        </div>
+
+        <section class="card" aria-labelledby="liveTitle">
+          <h2 id="liveTitle" tabindex="-1">Live attentiveness</h2>
+
+          <div id="extStatus" class="ext-status ext-offline" role="status">
+            <span class="ext-dot" aria-hidden="true"></span>
+            <span id="extStatusText">Checking the extension…</span>
+          </div>
+
+          <div class="self-hero">
+            <div class="score-block">
+              <div class="metric-label" id="scoreLabel">Attentiveness score</div>
+              <div class="score-value"><span id="scoreValue">–</span><span id="scoreUnit" class="score-unit" hidden>%</span></div>
+              <div id="scoreMeter" class="meter" role="meter" aria-labelledby="scoreLabel" aria-valuemin="0" aria-valuemax="100" aria-valuetext="No score yet">
+                <div id="scoreMeterFill" class="meter-fill"></div>
+              </div>
+            </div>
+            <div class="state-block">
+              <div class="metric-label" id="stateLabel">Current state</div>
+              <span id="stateBadge" class="state-badge state-offline" aria-labelledby="stateLabel stateBadge">Offline</span>
+              <p id="stateHint" class="hint">Signals, not a verdict: a low score only means a quick check-in may help.</p>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="chart-head"><h3 id="selfChartTitle">Your score over time</h3></div>
+            <div class="chart-box">
+              <canvas id="selfChart" role="img" aria-label="Your attentiveness score over time. No data yet."></canvas>
+              <p id="selfChartEmpty" class="chart-empty muted">The chart fills in while your extension is streaming (about every 8 seconds).</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="detailsTitle">
+          <h2 id="detailsTitle">Exactly what your educator sees about you</h2>
+          <p class="muted small">Live and complete. Only you and your educator can see this; other students never do.</p>
+          <dl class="self-grid" aria-labelledby="detailsTitle">
+            <div><dt>No mouse/keyboard for</dt><dd id="selfIdle">–</dd></div>
+            <div><dt>Times focus was lost</dt><dd id="selfFocusLoss">0</dd></div>
+            <div><dt>Times left the meeting/tab</dt><dd id="selfSwitches">0</dd></div>
+            <div><dt>Replies to educator questions</dt><dd id="selfReplies">0</dd></div>
+            <div><dt>Meeting chat messages sent</dt><dd id="selfMeetingChat">0</dd></div>
+          </dl>
+          <ul id="selfReasons" class="reasons" aria-label="Why a check-in was suggested"></ul>
+        </section>
+      </section>
+
+      <!-- ===================== CLASSES ===================== -->
+      <section id="panel-classes" class="tab-panel" role="tabpanel" aria-labelledby="tab-classes" hidden>
+        <div class="page-head">
+          <div>
+            <h1>My class</h1>
+            <p class="page-sub">The class you are monitored in, and how to join another.</p>
+          </div>
+        </div>
+
+        <section class="card" id="classBanner" aria-labelledby="className">
+          <h2 id="className" tabindex="-1">Class</h2>
+          <p class="class-banner-meta">Educator: <span id="educatorName">–</span> · Class code: <strong id="classCodeText">–</strong></p>
+        </section>
+
+        <section class="card no-print" aria-labelledby="otherClassTitle">
+          <h2 id="otherClassTitle">Join a different class</h2>
+          <p class="muted">Have a code for another class? Use the Join page with your name, email and that class code.</p>
+          <div class="button-row"><a class="btn btn-secondary" href="/join.html">Go to the Join page</a></div>
+        </section>
+      </section>
+
+      <!-- ===================== SETTINGS ===================== -->
+      <section id="panel-settings" class="tab-panel no-print" role="tabpanel" aria-labelledby="tab-settings" hidden>
+        <div class="page-head">
+          <div>
+            <h1>Settings</h1>
+            <p class="page-sub">Appearance, accessibility and general preferences, plus your privacy controls.</p>
+          </div>
+        </div>
+
+        <div class="settings-layout">
+          <nav class="settings-nav" aria-label="Settings sections">
+            <ul>
+              <li><a href="#settings-appearance">Appearance</a></li>
+              <li><a href="#settings-accessibility">Accessibility</a></li>
+              <li><a href="#settings-general">General</a></li>
+              <li><a href="#privacyControls">Privacy &amp; consent</a></li>
+            </ul>
+          </nav>
+
+          <div class="settings-sections">
+            <!-- Appearance, Accessibility and General are built here by js/settings.js -->
+            <div id="settingsRoot" class="settings-root" data-role="student"></div>
+
+            <section id="privacyControls" class="card settings-section" tabindex="-1" aria-labelledby="privacyTitle">
+              <h2 id="privacyTitle" tabindex="-1">Privacy &amp; consent</h2>
+              <p id="consentStatus" class="consent-status" role="status">Checking consent…</p>
+              <p class="muted">You are in control. Read the <a href="/privacy.html">privacy notice</a>, withdraw consent (monitoring stops at once and your live data is deleted), leave the class, or erase everything.</p>
+              <div class="button-row">
+                <button id="consentToggleBtn" class="btn btn-secondary" type="button">Withdraw my consent</button>
+                <button id="leaveClassBtn" class="btn btn-secondary token-only" type="button">Leave this class</button>
+                <button id="deleteDataBtn" class="btn btn-danger token-only" type="button">Delete my data</button>
+                <button id="signOutAllBtn" class="btn btn-secondary token-only" type="button">Sign out everywhere</button>
+              </div>
+              <p id="tokenOnlyHint" class="hint hidden">Leaving the class, erasing your data and signing out everywhere need a signed-in session: open this page from the browser extension, or <a href="/join.html">join again</a>.</p>
+              <p class="hint token-only">“Sign out everywhere” also signs out your browser extension; you can join again at any time with your name, email and class code.</p>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/settings.js"></script>
+  <script src="/js/nav.js"></script>
+  <script src="/vendor/chart.umd.js"></script>
+  <script src="/js/chartMatrix.js"></script>
+  <script src="/js/privacy.js"></script>
+  <script src="/js/student.js"></script>
+</body>
+</html>

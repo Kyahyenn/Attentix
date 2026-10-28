@@ -1,0 +1,13 @@
+.env
+data/
+node_modules/
+tests/
+coverage/
+.git/
+npm-debug.log*
+*.zip
+dist/
+scripts/
+Launch-*
+server.log
+install.log

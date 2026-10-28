@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Educator dashboard · Attentix</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/js/a11y.js"></script>
+</head>
+<body class="has-tabs">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Icon sprite: inline so nothing is fetched and the strict CSP is untouched. -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M2.5 5.5C5 4 8.5 4 12 6c3.5-2 7-2 9.5-.5v13.5c-2.5-1.5-6-1.5-9.5.5-3.5-2-7-2-9.5-.5z"/><path d="M12 6v13.5"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M3 6h9M16 6h5M3 12h3M10 12h11M3 18h11M18 18h3"/><circle cx="14" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="18" r="2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.7a3.5 3.5 0 0 1 0 6.6M18 14.4c2.1.7 3.5 2.6 3.5 5.6"/></symbol>
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8.5 6H21M8.5 12H21M8.5 18H21"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/></symbol>
+    <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 14 4-5"/></symbol>
+  </svg>
+
+  <header class="app-header no-print" id="appHeader">
+    <div class="app-header-inner">
+      <a class="brand" href="#home" aria-label="Attentix home">
+        <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-target"/></svg></span>
+        <span class="brand-name">Attentix</span>
+      </a>
+
+      <nav class="app-tabs" id="appNav" aria-label="Main">
+        <button class="tab" role="tab" type="button" id="tab-home" data-tab="home" aria-controls="panel-home" aria-selected="true">
+          <svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Home</span>
+        </button>
+        <button class="tab" role="tab" type="button" id="tab-classes" data-tab="classes" aria-controls="panel-classes" aria-selected="false" tabindex="-1">
+          <svg class="icon" aria-hidden="true"><use href="#i-book"/></svg><span>Classes</span>
+        </button>
+        <button class="tab" role="tab" type="button" id="tab-settings" data-tab="settings" aria-controls="panel-settings" aria-selected="false" tabindex="-1">
+          <svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg><span>Settings</span>
+        </button>
+      </nav>
+
+      <div class="header-end">
+        <span class="header-user" id="userName">Loading…</span>
+        <span class="badge" id="liveBadge" role="status">Connecting…</span>
+        <button id="logoutBtn" class="btn btn-header btn-small" type="button">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="app-main">
+    <noscript><p class="notice notice-warn">This dashboard needs JavaScript. Please enable it.</p></noscript>
+
+    <!-- ===================== HOME ===================== -->
+    <section id="panel-home" class="tab-panel no-print" role="tabpanel" aria-labelledby="tab-home">
+      <div class="page-head">
+        <div>
+          <h1>Home</h1>
+          <p class="page-sub">An overview of your classes and what is happening in them right now.</p>
+        </div>
+      </div>
+
+      <div class="stat-grid" aria-label="Overview">
+        <div class="stat"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-layers"/></svg></span><span><span class="stat-value" id="homeClasses">–</span><span class="stat-label">Total classes</span></span></div>
+        <div class="stat"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-users"/></svg></span><span><span class="stat-value" id="homeStudents">–</span><span class="stat-label">Students enrolled</span></span></div>
+        <div class="stat"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-pulse"/></svg></span><span><span class="stat-value" id="homeActive">–</span><span class="stat-label">Active now</span></span></div>
+        <div class="stat"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-gauge"/></svg></span><span><span class="stat-value" id="homeAverage">–</span><span class="stat-label">Average attentiveness</span></span></div>
+        <div class="stat"><span class="stat-icon" aria-hidden="true"><svg class="icon"><use href="#i-alert"/></svg></span><span><span class="stat-value" id="homeBelow">–</span><span class="stat-label">Below 60 (check-in)</span></span></div>
+      </div>
+
+      <section class="card" aria-labelledby="quickTitle">
+        <h2 id="quickTitle">Quick actions</h2>
+        <div class="button-row quick-actions">
+          <button id="quickCreateBtn" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Create Class</button>
+          <a id="quickViewBtn" class="btn btn-secondary" href="#classes"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg>View Classes</a>
+        </div>
+      </section>
+
+      <div class="home-grid">
+        <section class="card" aria-labelledby="recentTitle">
+          <h2 id="recentTitle">Recently opened</h2>
+          <ul id="recentClasses" class="mini-list"></ul>
+          <p id="recentEmpty" class="muted">Classes you open show up here for quick access.</p>
+        </section>
+
+        <section class="card" aria-labelledby="activityTitle">
+          <h2 id="activityTitle">Recent activity</h2>
+          <ul id="recentActivity" class="mini-list"></ul>
+          <p id="activityEmpty" class="muted">No student activity yet in this session. It appears here as students join and take part.</p>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===================== CLASSES ===================== -->
+    <section id="panel-classes" class="tab-panel no-print" role="tabpanel" aria-labelledby="tab-classes" hidden>
+      <div class="page-head">
+        <div>
+          <h1>Classes</h1>
+          <p class="page-sub">Every class has its own permanent code. Open one to watch it live.</p>
+        </div>
+        <button id="createClassOpenBtn" class="btn btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Create Class</button>
+      </div>
+
+      <section class="card" aria-labelledby="classesTitle">
+        <h2 id="classesTitle" class="visually-hidden">Your classes</h2>
+        <div class="table-tools class-tools">
+          <label class="visually-hidden" for="classSearch">Search classes</label>
+          <input id="classSearch" type="search" placeholder="Search by name, section or code…" autocomplete="off" />
+          <label class="tool-label" for="classSort">Sort</label>
+          <select id="classSort">
+            <option value="name">Name A–Z</option>
+            <option value="newest">Newest first</option>
+            <option value="students">Most students</option>
+            <option value="active">Most active now</option>
+            <option value="recent">Recently opened</option>
+          </select>
+          <div class="segmented" role="group" aria-label="Layout">
+            <button id="viewGrid" class="segment is-active" type="button" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg><span>Grid</span></button>
+            <button id="viewList" class="segment" type="button" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg><span>List</span></button>
+          </div>
+        </div>
+        <p id="classCount" class="hint" role="status">Loading classes…</p>
+        <div id="classList" class="class-list view-grid" aria-live="off"><div class="loading-row"><span class="spinner" aria-hidden="true"></span><span aria-hidden="true">Loading classes…</span></div></div>
+      </section>
+    </section>
+
+    <!-- ===================== ONE CLASS (opened from Classes: #class/<id>) ===================== -->
+    <section id="panel-class" class="tab-panel" role="tabpanel" data-parent="classes" aria-labelledby="dashboardClassTitle" hidden>
+      <p class="back-row no-print"><a id="backToClasses" class="btn btn-secondary btn-small" href="#classes"><svg class="icon" aria-hidden="true"><use href="#i-back"/></svg>Back to Classes</a></p>
+
+      <section class="card empty hidden" id="classMissing" aria-labelledby="classMissingTitle">
+        <h2 id="classMissingTitle">Class not found</h2>
+        <p class="muted">This class does not exist any more, or it belongs to another account.</p>
+      </section>
+
+      <section class="stack hidden" id="dashboardSection">
+        <div class="card">
+          <div class="dashboard-header">
+            <div>
+              <h1 id="dashboardClassTitle" tabindex="-1">Class dashboard</h1>
+              <p class="muted" id="dashboardClassMeta"></p>
+            </div>
+            <div class="header-actions no-print">
+              <button id="resetBtn" class="btn btn-secondary btn-small" type="button">Clear live data</button>
+              <button id="exportCsvBtn" class="btn btn-secondary btn-small" type="button">Export CSV</button>
+              <button id="printBtn" class="btn btn-secondary btn-small" type="button">Print / save PDF</button>
+            </div>
+          </div>
+
+          <div class="code-banner">
+            <div>
+              <div class="metric-label" id="dashCodeLabel">Class code (permanent)</div>
+              <div class="class-code-row">
+                <span id="dashClassCode" class="class-code" aria-hidden="true">–</span>
+                <span id="dashClassCodeSpoken" class="visually-hidden"></span>
+                <button id="dashCopyCodeBtn" class="btn btn-primary btn-small no-print" type="button">Copy Class Code</button>
+                <button id="dashCopyLinkBtn" class="btn btn-ghost btn-small no-print" type="button">Copy invite link</button>
+                <span id="dashCopyStatus" class="copy-status no-print" role="status"></span>
+              </div>
+            </div>
+            <p class="hint">Students join with this code from the browser extension or the Join page. It cannot be changed or regenerated.</p>
+          </div>
+
+          <div class="button-row no-print">
+            <button id="dashDownloadBtn" class="btn btn-secondary btn-small" type="button">Download Pre-Configured Student Extension</button>
+          </div>
+          <p class="hint no-print">The pre-configured extension already knows this server and this class. The student unzips it, then in Chrome opens <em>Extensions</em>, turns on <em>Developer mode</em>, chooses <em>Load unpacked</em> and picks the folder. They only type their name and email.</p>
+        </div>
+
+        <p class="notice notice-warn">
+          <strong>Signals, not proof.</strong> A flag means “a quick check-in may help”, not “this student is not paying attention”.
+          Students may be listening, taking notes on paper, using assistive tools, or have a poor connection.
+          Students can see exactly what you see about them.
+        </p>
+
+        <div class="card no-print">
+          <h3>Ask your class</h3>
+          <div class="toolbar">
+            <label class="visually-hidden" for="promptText">Question for students</label>
+            <input id="promptText" type="text" placeholder="Ask a question or request confirmation…" maxlength="300" />
+            <button id="sendPromptBtn" class="btn btn-primary" type="button">Send to students</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 id="statesTitle">Live attentiveness</h3>
+          <ul class="state-cells" aria-labelledby="statesTitle">
+            <li class="state-cell state-focused"><span class="state-cell-label">Focused</span><span class="state-cell-count" id="cellFocused">0</span><span class="state-cell-pct" id="cellFocusedPct">0%</span></li>
+            <li class="state-cell state-passive"><span class="state-cell-label">Passive</span><span class="state-cell-count" id="cellPassive">0</span><span class="state-cell-pct" id="cellPassivePct">0%</span></li>
+            <li class="state-cell state-distracted"><span class="state-cell-label">Distracted</span><span class="state-cell-count" id="cellDistracted">0</span><span class="state-cell-pct" id="cellDistractedPct">0%</span></li>
+            <li class="state-cell state-offline"><span class="state-cell-label">Offline</span><span class="state-cell-count" id="cellOffline">0</span><span class="state-cell-pct" id="cellOfflinePct">0%</span></li>
+          </ul>
+
+          <h3 id="metricsTitle" class="section-title">Distribution</h3>
+          <dl class="cards" aria-labelledby="metricsTitle">
+            <div class="metric-card"><dt class="metric-label">Class average</dt><dd class="metric-value" id="metricAverage">–</dd></div>
+            <div class="metric-card"><dt class="metric-label">Median score</dt><dd class="metric-value" id="metricMedian">–</dd></div>
+            <div class="metric-card"><dt class="metric-label">Lowest score</dt><dd class="metric-value" id="metricLowest">–</dd></div>
+            <div class="metric-card"><dt class="metric-label">Below 60 (check-in)</dt><dd class="metric-value" id="metricBelow">0</dd></div>
+            <div class="metric-card"><dt class="metric-label">Focus losses (total)</dt><dd class="metric-value" id="metricFocusLoss">0</dd></div>
+            <div class="metric-card"><dt class="metric-label">Unanswered question</dt><dd class="metric-value" id="metricUnanswered">0</dd></div>
+          </dl>
+        </div>
+
+        <div class="charts no-print">
+          <div class="chart-card">
+            <div class="chart-head"><h3 id="statusChartTitle">Student states</h3><div id="statusChartType"></div></div>
+            <div class="chart-box"><canvas id="statusChart" role="img" aria-label="Student states chart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-head"><h3 id="averageChartTitle">Class average over time</h3></div>
+            <div class="chart-box">
+              <canvas id="averageChart" role="img" aria-label="Class average over time chart"></canvas>
+              <p id="averageChartEmpty" class="chart-empty muted">The trendline starts once students are streaming scores.</p>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-head"><h3 id="scoreChartTitle">Score distribution</h3><div id="scoreChartType"></div></div>
+            <div class="chart-box"><canvas id="scoreChart" role="img" aria-label="Score distribution chart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 id="rosterTitle">Live roster</h3>
+          <div class="table-tools no-print">
+            <label class="visually-hidden" for="searchInput">Search students</label>
+            <input id="searchInput" type="search" placeholder="Search students…" autocomplete="off" />
+            <label class="tool-label" for="stateFilter">Show</label>
+            <select id="stateFilter">
+              <option value="all">All students</option>
+              <option value="check-in">Needs a check-in (Passive + Distracted)</option>
+              <option value="Focused">Focused</option>
+              <option value="Passive">Passive</option>
+              <option value="Distracted">Distracted</option>
+              <option value="Offline">Offline</option>
+            </select>
+            <label class="tool-label" for="sortSelect">Sort</label>
+            <select id="sortSelect">
+              <option value="state">Needs a check-in first</option>
+              <option value="score-asc">Lowest score first</option>
+              <option value="score-desc">Highest score first</option>
+              <option value="focus-loss">Most focus losses first</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </div>
+          <p id="rosterCount" class="hint" role="status">No students yet.</p>
+
+          <div class="table-wrap" role="region" aria-labelledby="rosterTitle" tabindex="0">
+            <table>
+              <caption class="visually-hidden">Live student attentiveness</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Name</th><th scope="col">State</th><th scope="col">Score</th><th scope="col">Signals</th>
+                  <th scope="col">Focus losses</th><th scope="col">Idle</th><th scope="col">Tab switches</th><th scope="col">Replies</th><th scope="col">Meeting chat</th><th scope="col">Last seen</th>
+                  <th scope="col" class="no-print"><span class="visually-hidden">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="studentTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <section id="panel-settings" class="tab-panel no-print" role="tabpanel" aria-labelledby="tab-settings" hidden>
+      <div class="page-head">
+        <div>
+          <h1>Settings</h1>
+          <p class="page-sub">Appearance, accessibility and general preferences, plus your server and account.</p>
+        </div>
+      </div>
+
+      <div class="settings-layout">
+        <nav class="settings-nav" aria-label="Settings sections">
+          <ul>
+            <li><a href="#settings-appearance">Appearance</a></li>
+            <li><a href="#settings-accessibility">Accessibility</a></li>
+            <li><a href="#settings-general">General</a></li>
+            <li id="settingsNavServer" hidden><a href="#serverSection">Server address</a></li>
+            <li><a href="#accountSection">Your account</a></li>
+          </ul>
+        </nav>
+
+        <div class="settings-sections">
+          <!-- Appearance, Accessibility and General are built here by js/settings.js -->
+          <div id="settingsRoot" class="settings-root" data-role="educator"></div>
+
+          <section class="card settings-section" id="serverSection" tabindex="-1" aria-labelledby="serverTitle" hidden>
+            <h2 id="serverTitle">Server address</h2>
+            <p class="muted small">Students on your network connect to this address. It is filled in for them automatically when you download a class’s pre-configured extension.</p>
+            <div class="class-code-row">
+              <span id="serverAddress" class="server-address"></span>
+              <button id="copyServerBtn" class="btn btn-primary btn-small" type="button">Copy address</button>
+              <span id="serverCopyStatus" class="copy-status" role="status"></span>
+            </div>
+            <p id="serverLocal" class="hint"></p>
+            <p id="serverNoLan" class="notice notice-warn" hidden>No network connection was detected, so only this computer can reach the server. Connect to your Wi-Fi or Ethernet and restart the app.</p>
+            <p id="serverHttpNote" class="hint" hidden>This address uses plain http:// on your local network: names and emails are not encrypted on the Wi-Fi. For a server on the internet, put it behind https://.</p>
+            <div class="button-row" id="shutdownRow" hidden>
+              <button id="shutdownBtn" class="btn btn-danger" type="button">Shut down server</button>
+              <span class="hint">Stops the app on this computer. Students are disconnected.</span>
+            </div>
+          </section>
+
+          <section class="card settings-section" id="accountSection" tabindex="-1" aria-labelledby="accountTitle">
+            <h2 id="accountTitle">Your account</h2>
+            <p class="muted">Deleting your account also deletes your classes and removes their students’ enrolment and live data.</p>
+            <div class="button-row"><button id="deleteAccountBtn" class="btn btn-danger" type="button">Delete my account and classes</button></div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="createClassDialog" class="dialog" aria-labelledby="createTitle">
+    <form id="createClassForm" novalidate>
+      <h2 id="createTitle">Create class</h2>
+      <p class="muted small">Every class gets its own class code. It is permanent: it never changes, so students and their browser extensions can keep using it all term.</p>
+      <div class="form-grid">
+        <div>
+          <label class="field-label" for="classNameInput">Class name</label>
+          <input id="classNameInput" type="text" placeholder="Mathematics 101" maxlength="100" aria-describedby="classNameInputError" required />
+          <p id="classNameInputError" class="field-error" hidden></p>
+        </div>
+        <div>
+          <label class="field-label" for="classSectionInput">Section</label>
+          <input id="classSectionInput" type="text" placeholder="Section A" maxlength="50" />
+        </div>
+      </div>
+      <div id="createClassError" class="error" role="alert"></div>
+      <div class="button-row">
+        <button id="createCancelBtn" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="createClassBtn" class="btn btn-primary" type="submit">Create class</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/js/common.js" defer></script>
+  <script src="/js/settings.js" defer></script>
+  <script src="/js/nav.js" defer></script>
+  <script src="/vendor/chart.umd.js" defer></script>
+  <script src="/js/chartMatrix.js" defer></script>
+  <script src="/js/educator.js" defer></script>
+</body>
+</html>

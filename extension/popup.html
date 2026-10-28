@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attentix</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body data-view="loading">
+  <main aria-labelledby="appTitle">
+    <header class="top">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span>
+      <h1 id="appTitle">Attentix</h1>
+    </header>
+
+    <!-- Plain-language problem report with one clear action. Used for network/server trouble and join errors. -->
+    <div id="banner" class="banner" role="alert" hidden>
+      <p id="bannerText"></p>
+      <button id="bannerAction" type="button" class="btn btn-secondary"></button>
+    </div>
+
+    <!-- loading: asking the background worker whether this browser already joined a class -->
+    <section id="viewLoading" class="panel" aria-label="Loading">
+      <p class="loading-line" role="status"><span class="spinner" aria-hidden="true"></span><span>Checking your session…</span></p>
+    </section>
+
+    <!-- idle / disconnected (and "loading" while a join is submitted): the Join Class form. No password, no token pasting. -->
+    <section id="viewJoin" class="panel" aria-labelledby="joinHeading" hidden>
+      <h2 id="joinHeading">Join your class</h2>
+      <p class="lead">Enter the details from your educator. You don’t need an account or a password.</p>
+
+      <form id="joinForm" novalidate aria-busy="false">
+        <fieldset id="fsClass">
+          <legend>Class</legend>
+
+          <p id="serverNotice" class="hint server-notice" hidden>Connecting to your educator’s server at <strong id="serverShown"></strong>.</p>
+
+          <details id="advanced" class="advanced">
+            <summary>Advanced settings</summary>
+            <div class="field">
+              <label for="serverUrl">Server address</label>
+              <input id="serverUrl" name="serverUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" required
+                     aria-describedby="serverHint serverError" />
+              <p id="serverHint" class="hint">The address your educator hosts Attentix on.</p>
+              <p id="serverError" class="field-error" hidden></p>
+            </div>
+          </details>
+
+          <div class="field">
+            <label for="classCode">Class code</label>
+            <input id="classCode" name="classCode" type="text" class="code" maxlength="8" autocomplete="off" autocapitalize="characters"
+                   spellcheck="false" required aria-describedby="classCodeError" />
+            <p id="classCodeError" class="field-error" hidden></p>
+          </div>
+        </fieldset>
+
+        <fieldset id="fsYou">
+          <legend>About you</legend>
+
+          <div class="field">
+            <label for="fullName">Full name</label>
+            <input id="fullName" name="fullName" type="text" autocomplete="name" maxlength="100" required aria-describedby="fullNameError" />
+            <p id="fullNameError" class="field-error" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="email">Email address</label>
+            <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required aria-describedby="emailError" />
+            <p id="emailError" class="field-error" hidden></p>
+          </div>
+        </fieldset>
+
+        <fieldset id="fsConsent" class="consent">
+          <legend class="sr-only">Privacy and telemetry consent</legend>
+          <div class="check">
+            <input id="consent" name="consent" type="checkbox" required aria-describedby="consentText consentError" />
+            <label for="consent">I agree to share my attentiveness data with my educator.</label>
+          </div>
+          <p id="consentText" class="hint">
+            While a Meet or Zoom class tab is open, this shares a focus score, how recently you were active, whether media is playing,
+            and how often you switch tabs. It never reads what you type, say or see.
+            <a id="privacyLink" href="#" target="_blank" rel="noopener noreferrer">Read the privacy notice</a>
+          </p>
+          <p id="consentError" class="field-error" hidden></p>
+        </fieldset>
+
+        <button id="joinBtn" type="submit" class="btn btn-primary">
+          <span class="spinner" aria-hidden="true" hidden></span>
+          <span id="joinBtnLabel">Join class</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- connected (and reconnecting: same view plus the banner above) -->
+    <section id="viewConnected" class="panel" aria-labelledby="connectedHeading" hidden>
+      <h2 id="connectedHeading" class="sr-only" tabindex="-1">Your attentiveness</h2>
+
+      <div class="reading">
+        <div id="ring" class="ring" role="img" aria-label="Attentiveness score unavailable" data-state="None">
+          <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false">
+            <circle class="ring-track" cx="48" cy="48" r="40" />
+            <circle id="ringValue" class="ring-value" cx="48" cy="48" r="40" transform="rotate(-90 48 48)" />
+          </svg>
+          <span id="scoreText" class="ring-score" aria-hidden="true">--</span>
+        </div>
+        <div class="reading-text">
+          <p id="stateBadge" class="state-badge" data-state="None">Idle</p>
+          <p id="stateHint" class="hint">Open your Meet or Zoom class tab to start.</p>
+        </div>
+      </div>
+
+      <ul id="reasons" class="reasons" aria-label="What your educator sees flagged" hidden></ul>
+
+      <dl class="facts">
+        <div><dt>Class</dt><dd id="factClass"></dd></div>
+        <div><dt>Class code</dt><dd id="factCode" class="code"></dd></div>
+        <div><dt>Student</dt><dd id="factName"></dd></div>
+        <div><dt>Email</dt><dd id="factEmail"></dd></div>
+        <div><dt>Connection</dt><dd id="factHealth"></dd></div>
+      </dl>
+
+      <div class="actions">
+        <button id="openDashboard" type="button" class="btn btn-secondary">Open Web Dashboard (Optional)</button>
+        <button id="disconnectBtn" type="button" class="btn btn-quiet">Switch Class / Disconnect</button>
+      </div>
+    </section>
+
+    <!-- Announces state and connection changes to screen readers, and nothing else (no per-second chatter). -->
+    <p id="live" class="sr-only" role="status" aria-live="polite"></p>
+  </main>
+  <script src="config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

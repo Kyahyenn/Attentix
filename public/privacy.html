@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Privacy &amp; ethics · Attentix</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/js/a11y.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <main id="main" class="container reading">
+    <a class="auth-brand" href="/login.html" aria-label="Attentix"><span class="brand-mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><span>Attentix</span></a>
+    <h1>Privacy &amp; ethics notice</h1>
+    <div id="statusNotice" class="notice" role="status">
+      <strong>Student consent required:</strong> before a class can monitor your activity, you need to read this and decide. There is no account and no password: you are identified by your email and class code.
+    </div>
+
+    <section class="card">
+      <h2>What is collected, and only while you are in a class</h2>
+      <ul>
+        <li><strong>Browser extension (Google Meet / Zoom web client only):</strong> a focus score (0–100), how long since you last used the mouse or keyboard in the meeting, how often you were active in the last minute (counts only, never which keys), whether you are scrolling or a video/audio is playing in the meeting tab, how many times you left the meeting for another tab or app, and how many chat messages you <em>sent</em> in the meeting. A badge is shown on the meeting page whenever it is on.</li>
+        <li><strong>Your dashboard (this website, optional):</strong> it only <em>shows</em> you your own live numbers. It does not watch your mouse, keyboard or tabs.</li>
+        <li><strong>Your details:</strong> your name, your email, the class you joined, and this consent decision with its date and version. There is no password: students do not have one.</li>
+      </ul>
+      <p><strong>Never collected:</strong> passwords, what you type (including your meeting chat text and the text of your replies to educator questions, which are not stored), screenshots, camera, microphone, files, or your browsing history. The extension cannot see the address of tabs other than Meet/Zoom and this app.</p>
+    </section>
+
+    <section class="card">
+      <h2>Who sees it</h2>
+      <ul>
+        <li>The educator who owns the class sees your <strong>name and the indicators above</strong>, live, and can export the current table as a CSV file to their own computer.</li>
+        <li><strong>You see exactly what they see about you</strong>, live, on your dashboard. Other students never see your data; they only see the class average.</li>
+        <li>Nothing is sold or shared with third parties. This app loads no external scripts, fonts or trackers.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>How long it is kept</h2>
+      <ul>
+        <li>Live activity is held <strong>in the server’s memory only</strong> (never written to disk). It is forgotten about an hour after you disconnect, when the server restarts, when your educator clears the class data, or <strong>immediately</strong> if you withdraw consent, leave the class or delete your account.</li>
+        <li>Your name, email, class membership and consent record are kept until you delete your data.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Fairness: these are signals, not proof</h2>
+      <p>Indicators can be wrong. A student may be listening, reading, taking notes on paper, using assistive technology, or having connection problems. Educators are asked to treat a flag as a reason to <em>check in kindly</em>, never as proof of inattention or as the sole basis for a grade or disciplinary decision.</p>
+    </section>
+
+    <section class="card">
+      <h2>Your controls</h2>
+      <ul>
+        <li><strong>Withdraw consent</strong> at any time on this page: monitoring stops at once and your live data is deleted.</li>
+        <li><strong>Leave a class</strong> from your dashboard.</li>
+        <li><strong>Delete your data</strong> from your dashboard.</li>
+        <li>Saying no is fine: you simply cannot join a monitored class. Ask your educator about an alternative way to take part.</li>
+      </ul>
+    </section>
+
+    <section id="identifyCard" class="card hidden" aria-labelledby="identifyTitle">
+      <h2 id="identifyTitle" tabindex="-1">Find your consent record</h2>
+      <p class="muted">Enter the email and class code you joined with. No password needed.</p>
+      <form id="identifyForm" novalidate>
+        <p id="identifyFormError" class="error" role="alert"></p>
+
+        <label class="field-label" for="identifyEmail">Email</label>
+        <input id="identifyEmail" type="email" placeholder="name@school.edu" autocomplete="email" aria-describedby="identifyEmailError" required />
+        <p id="identifyEmailError" class="field-error" hidden></p>
+
+        <label class="field-label" for="identifyClassCode">Class code</label>
+        <input id="identifyClassCode" class="code-input" type="text" placeholder="Example: ABC234" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="identifyClassCodeError" required />
+        <p id="identifyClassCodeError" class="field-error" hidden></p>
+
+        <div class="button-row"><button id="identifyBtn" type="submit" class="btn btn-primary">Continue</button></div>
+      </form>
+    </section>
+
+    <section id="decisionCard" class="card hidden" aria-labelledby="decisionTitle">
+      <h2 id="decisionTitle" tabindex="-1">Do you accept?</h2>
+      <div class="button-row">
+        <button id="acceptBtn" class="btn btn-primary" type="button">I accept</button>
+        <button id="declineBtn" class="btn btn-danger" type="button">No, I decline</button>
+      </div>
+      <div id="privacyMessage" class="error" role="alert"></div>
+    </section>
+
+    <section id="withdrawCard" class="card hidden" aria-labelledby="withdrawTitle">
+      <h2 id="withdrawTitle" tabindex="-1">You have accepted this notice</h2>
+      <p class="muted" id="acceptedAt"></p>
+      <div class="button-row">
+        <a class="btn btn-secondary" href="/student.html">Back to my dashboard</a>
+        <button id="withdrawBtn" class="btn btn-danger" type="button">Withdraw my consent</button>
+      </div>
+    </section>
+
+    <section id="declinedCard" class="card hidden" aria-labelledby="declinedTitle">
+      <h2 id="declinedTitle" tabindex="-1">No problem — nothing will be monitored</h2>
+      <p role="status">Your decision is saved: no data is collected about you. You can change your mind later from this page.</p>
+      <div class="button-row">
+        <button id="signOutBtn" class="btn btn-secondary" type="button">Forget me on this browser</button>
+        <button id="reviewBtn" class="btn btn-ghost" type="button">Review again</button>
+      </div>
+    </section>
+
+    <p id="previewNote" class="muted center hidden"><a href="/join.html">← Back to the Join page</a> · <a href="/login.html">Educator sign in</a></p>
+  </main>
+  <script src="/js/common.js"></script>
+  <script src="/js/privacy.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Join a class · Attentix</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/js/a11y.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <main id="main" class="container narrow">
+    <a class="auth-brand" href="/join.html" aria-label="Attentix"><span class="brand-mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><span>Attentix</span></a>
+    <h1>Join a class</h1>
+    <p class="muted">No account and no password. Your name, your email and the class code from your educator are all it takes.</p>
+    <p id="deletedNotice" class="notice hidden" role="status">Your data was deleted and monitoring has stopped.</p>
+    <noscript><p class="notice notice-warn">This page needs JavaScript. Please enable it to join a class.</p></noscript>
+
+    <section id="existingCard" class="card hidden" aria-labelledby="existingTitle">
+      <h2 id="existingTitle" tabindex="-1">You’re already joined</h2>
+      <p id="existingText"></p>
+      <div class="button-row">
+        <a class="btn btn-primary" href="/student.html">Open my dashboard</a>
+        <button id="existingForgetBtn" class="btn btn-secondary" type="button">Not me: forget this browser</button>
+      </div>
+      <p class="hint">Want to join a different class? Use the form below.</p>
+    </section>
+
+    <section id="joinCard" class="card" aria-labelledby="joinTitle">
+      <h2 id="joinTitle">Your details</h2>
+      <form id="joinForm" novalidate>
+        <p id="joinFormError" class="error" role="alert"></p>
+
+        <label class="field-label" for="joinName">Full name</label>
+        <input id="joinName" type="text" autocomplete="name" aria-describedby="joinNameError" required />
+        <p id="joinNameError" class="field-error" hidden></p>
+
+        <label class="field-label" for="joinEmail">Email</label>
+        <input id="joinEmail" type="email" placeholder="name@school.edu" autocomplete="email" aria-describedby="joinEmailError" required />
+        <p id="joinEmailError" class="field-error" hidden></p>
+
+        <label class="field-label" for="joinClassCode">Class code</label>
+        <input id="joinClassCode" class="code-input" type="text" placeholder="Example: ABC234" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="joinClassCodeHelp joinClassCodeError" required />
+        <p id="joinClassCodeHelp" class="hint">6 to 8 letters and numbers, from your educator.</p>
+        <p id="joinClassCodeError" class="field-error" hidden></p>
+
+        <div class="check-block">
+          <input id="joinConsent" type="checkbox" aria-describedby="joinConsentError" />
+          <label for="joinConsent">I have read the <a href="/privacy.html?preview=1" target="_blank" rel="noopener">privacy notice</a> and agree that my educator sees my attentiveness signals while I am in this class. I can withdraw at any time.</label>
+        </div>
+        <p id="joinConsentError" class="field-error" hidden></p>
+
+        <div class="check-block">
+          <input id="joinRemember" type="checkbox" />
+          <label for="joinRemember">Keep me signed in on this device for up to 12 hours <span class="muted">(leave unticked on a shared computer)</span></label>
+        </div>
+
+        <div class="button-row"><button id="joinBtn" type="submit" class="btn btn-primary">Join class</button></div>
+      </form>
+    </section>
+
+    <section id="successCard" class="card hidden" aria-labelledby="successTitle">
+      <h2 id="successTitle" tabindex="-1">You’re in!</h2>
+      <p id="successText" role="status"></p>
+      <ol>
+        <li><strong>Open the browser extension</strong> and join with the same name, email and class code to stream your attentiveness during the meeting.</li>
+        <li>Optional: <a href="/student.html">open your dashboard</a> to see your live score and manage your privacy settings.</li>
+      </ol>
+      <div class="button-row"><a class="btn btn-primary" href="/student.html">Open my dashboard</a></div>
+    </section>
+
+    <p class="muted small center">Are you an educator? <a href="/login.html">Sign in</a> or <a href="/educator-signup.html">create an educator account</a>.</p>
+  </main>
+  <script src="/js/common.js"></script>
+  <script src="/js/join.js"></script>
+</body>
+</html>

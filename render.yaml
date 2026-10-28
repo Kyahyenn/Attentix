@@ -1,0 +1,20 @@
+# One-click deploy on Render's free plan: https://render.com  ->  New  ->  Blueprint  ->  pick your GitHub repo.
+# See docs/deploy-free.md for the full walkthrough (it takes about 10 minutes and nothing is installed on your computer).
+services:
+  - type: web
+    name: attentix            # your address becomes https://attentix.onrender.com (or attentix-xxxx if the name is taken)
+    runtime: docker           # uses the Dockerfile in this folder
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: SESSION_SECRET
+        generateValue: true   # Render creates a strong random value once
+      - key: EXTENSION_TOKEN_SECRET
+        generateValue: true
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false           # you paste this in the Render dashboard (see docs/deploy-free.md, step 2)
+      # PUBLIC_URL, CORS_ORIGIN and TRUST_PROXY are filled in automatically from Render's own address.

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Educator sign-up · Attentix</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/js/a11y.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <main id="main" class="container narrow">
+    <a class="auth-brand" href="/login.html" aria-label="Attentix"><span class="brand-mark" aria-hidden="true"><svg class="icon" aria-hidden="true" focusable="false" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span><span>Attentix</span></a>
+    <h1>Educator sign-up</h1>
+    <noscript><p class="notice notice-warn">This app needs JavaScript. Please enable it to sign up.</p></noscript>
+    <section class="card" aria-labelledby="eduTitle">
+      <h2 id="eduTitle">Create an educator account</h2>
+      <p class="muted">An educator account lets you create classes, share each class’s permanent class code, and see live attentiveness for the students who join. Students never need an account or a password.</p>
+      <form id="educatorForm" novalidate>
+        <p id="eduFormError" class="error" role="alert"></p>
+
+        <label class="field-label" for="eduName">Full name</label>
+        <input id="eduName" type="text" autocomplete="name" aria-describedby="eduNameError" required />
+        <p id="eduNameError" class="field-error" hidden></p>
+
+        <label class="field-label" for="eduEmail">Email</label>
+        <input id="eduEmail" type="email" placeholder="name@school.edu" autocomplete="email" aria-describedby="eduEmailError" required />
+        <p id="eduEmailError" class="field-error" hidden></p>
+
+        <label class="field-label" for="eduPassword">Password</label>
+        <div class="input-with-button">
+          <input id="eduPassword" type="password" autocomplete="new-password" aria-describedby="eduHelp eduPasswordError" required />
+          <button type="button" class="btn btn-ghost show-password" data-target="eduPassword" aria-label="Show password" aria-pressed="false">Show</button>
+        </div>
+        <p id="eduHelp" class="hint">At least 8 characters. Avoid common passwords like “password123”.</p>
+        <p id="eduPasswordError" class="field-error" hidden></p>
+
+        <div class="button-row"><button id="eduBtn" type="submit" class="btn btn-primary">Create educator account</button></div>
+      </form>
+      <p class="muted small">Already have an account? <a href="/login.html">Educator sign in</a>. Are you a student? <a href="/join.html">Join a class</a>, no account needed.</p>
+    </section>
+  </main>
+  <script src="/js/common.js"></script>
+  <script src="/js/educator-signup.js"></script>
+</body>
+</html>
