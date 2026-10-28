@@ -1,11 +1,10 @@
 const express = require('express');
 const { retired } = require('../middleware/security');
 
-// Student Google sign-in was removed with student accounts. The routes stay so old links, bookmarks and cached pages
-// land somewhere sensible instead of hitting an unhandled path.
+// Student Google sign-in was removed. These routes stay so old links and cached pages land somewhere sensible.
 const router = express.Router();
 
-// Kept for cached pages from the Google era that still ask whether to show "Continue with Google": always no.
+// Cached pages from the Google era ask whether to show "Continue with Google": always no.
 router.get('/providers', (req, res) => res.json({ google: false }));
 
 // Browser navigations (the old button, the OAuth callback) go to the join page; anything else gets 410.

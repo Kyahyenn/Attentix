@@ -49,11 +49,11 @@ p { margin: 0; }
 .hint { color: var(--muted); font-size: 12px; line-height: 16px; margin-top: var(--s-1); }
 .code { font-variant-numeric: tabular-nums; letter-spacing: 0.08em; }
 
-/* ---- visible keyboard focus ------------------------------------------------------------------------------ */
+/* ---- visible keyboard focus ---- */
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 input:focus-visible { outline-offset: 0; border-color: var(--focus); }
 
-/* ---- the form ---------------------------------------------------------------------------------------------- */
+/* ---- the form ---- */
 fieldset { margin: 0 0 var(--s-4); padding: 0; border: 0; min-width: 0; }
 legend { padding: 0; margin-bottom: var(--s-2); font-weight: 700; }
 fieldset:disabled { opacity: 0.6; }
@@ -76,7 +76,7 @@ input[aria-invalid="true"] { border-color: var(--danger); box-shadow: inset 4px 
 .check label { margin: 0; font-weight: 600; }
 .consent a { color: var(--maroon); text-underline-offset: 2px; }
 
-/* ---- buttons ---------------------------------------------------------------------------------------------- */
+/* ---- buttons ---- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
   width: 100%; min-height: 40px; padding: var(--s-2) var(--s-4);
@@ -93,7 +93,7 @@ input[aria-invalid="true"] { border-color: var(--danger); box-shadow: inset 4px 
 
 .actions { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
 
-/* ---- spinner ----------------------------------------------------------------------------------------------- */
+/* ---- spinner ---- */
 .spinner {
   flex: none; width: 16px; height: 16px; border-radius: 50%;
   border: 2px solid currentColor; border-right-color: transparent; animation: spin 0.8s linear infinite;
@@ -101,14 +101,14 @@ input[aria-invalid="true"] { border-color: var(--danger); box-shadow: inset 4px 
 .loading-line { display: flex; gap: var(--s-2); align-items: center; color: var(--muted); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---- banner (network / server / join problems) ------------------------------------------------------------- */
+/* ---- banner (network / server / join problems) ---- */
 .banner { margin-top: var(--s-4); padding: var(--s-3); border: 1px solid; border-left-width: 4px; border-radius: var(--radius); display: grid; gap: var(--s-2); }
 .banner[data-kind="error"] { background: #fbe9e9; border-color: var(--danger); color: #7a1013; }
 .banner[data-kind="warn"] { background: #fbf3d6; border-color: var(--gold); color: #5c4400; }
 .banner[data-kind="info"] { background: #f7ebeb; border-color: var(--maroon); color: #4a0000; }
 .banner .btn { width: auto; justify-self: start; min-height: 32px; padding: var(--s-1) var(--s-3); color: var(--ink); }
 
-/* ---- connected view: the ring is the one expressive element ------------------------------------------------- */
+/* ---- connected view: the ring is the one expressive element ---- */
 .reading { display: flex; gap: var(--s-4); align-items: center; margin-bottom: var(--s-4); }
 .ring { position: relative; flex: none; width: 96px; height: 96px; }
 .ring svg { display: block; width: 100%; height: 100%; }

@@ -34,9 +34,8 @@ globalThis.AMP_PRECONFIG = {
 `;
 
 /**
- * The extension folder as a list of { name, data }, with config.js pre-filled and the manifest allowed to talk to the
- * professor's server out of the box (host_permissions is granted when the unpacked extension is loaded, so the student
- * is not asked for a separate permission).
+ * The extension folder as { name, data } entries, with config.js pre-filled and the manifest allowed to reach the professor's
+ * server (host_permissions is granted when the unpacked extension loads, so students get no extra prompt).
  */
 const buildExtensionFiles = ({ extensionDir, serverUrl, classCode, now = new Date() }) => {
   const origin = toOrigin(serverUrl);

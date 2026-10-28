@@ -1,14 +1,14 @@
 /**
- * Socket.IO layer: handshake authentication, class rooms and every real-time event.
+ * Socket.IO layer: handshake authentication, class rooms and all real-time events.
  *
- * Rooms per class: `<classId>` (everyone in it), `<classId>:educators`, `<classId>:students`, and
- * `<classId>:u:<studentId>` (one student's private channel for their own row).
+ * Rooms per class: `<classId>` (everyone), `<classId>:educators`, `<classId>:students`, and
+ * `<classId>:u:<studentId>` (one student's private channel).
  *
  * Client -> server: join_class, student:enterClass, educator:enterClass, student:activity, student:chatResponse,
- * educator:sendPrompt, educator:resetClass, attention_update (original score protocol), attention:heartbeat (extension 2.x),
+ * educator:sendPrompt, educator:resetClass, attention_update (original protocol), attention:heartbeat (extension 2.x),
  * extension:event.
  *
- * The returned object (see the bottom of this file) lets REST routes disconnect or re-check live sockets.
+ * The returned object lets REST routes disconnect or re-check live sockets.
  */
 const memoryState = require('../state/memoryState');
 const engagement = require('../state/engagementState');
@@ -25,8 +25,8 @@ const MetricPayloadSchema = z.object({
   inputIdleMs: z.number().min(0).max(24 * 60 * 60 * 1000).nullable().optional(),
   state: z.enum(['meeting', 'tool', 'away']).optional()
 });
-// v2 heartbeat (extension 2.x): one sample of the client-side attentiveness engine. `ageMs` is how long ago the sample was
-// taken (0 for a live beat, larger for a beat buffered during an outage); a relative age cannot be broken by a wrong clock.
+// v2 heartbeat: one sample from the extension. `ageMs` is how long ago it was taken (0 live, larger when buffered during an
+// outage); a relative age cannot be broken by a wrong clock.
 const { MAX_BEAT_AGE_MS } = engagement.constants;
 const MAX_BEATS_PER_BATCH = 5;
 const HeartbeatSchema = z.object({
@@ -54,8 +54,8 @@ const MIN_BROADCAST_INTERVAL_MS = 1000; // per class
 const ackOrNoop = (ack) => (typeof ack === 'function' ? ack : () => {});
 
 /**
- * A user may only enter a class they own (educator) or are enrolled in AND have consented to be monitored in (student).
- * Resolves to { ok: true, klass } or { ok: false, error }. Used on every entry, by the revalidation timer, and by REST heartbeats.
+ * A user may only enter a class they own (educator) or are enrolled in AND have consented to (student).
+ * Resolves to { ok: true, klass } or { ok: false, error }. Used on every entry, by the revalidation timer and by REST heartbeats.
  */
 const authorizeClassAccess = async (user, classId) => {
   const klass = await db.findById('classes', classId);
@@ -95,9 +95,8 @@ const makeAllow = () => {
 module.exports = (io) => {
   const socketsByUser = new Map(); // userId -> number of open sockets
 
-  // Rejecting in middleware makes the browser fire `connect_error` ("Authentication required"),
-  // which the pages already handle. Disconnecting after connect left the client silently dead.
-  // Two ways in: the cookie session (web pages) or a bearer token in the socket.io `auth` payload (browser extension).
+  // Rejecting in middleware makes the browser fire `connect_error` (the pages already handle it); disconnecting after
+  // connect left the client silently dead. Two ways in: the cookie session (web pages) or a bearer token in `auth` (extension).
   io.use((socket, next) => {
     const session = socket.request && socket.request.session;
     socket.data = socket.data || {};
@@ -123,9 +122,8 @@ module.exports = (io) => {
   const lastClassUpdateByClass = new Map();
   const educatorSockets = new Map(); // classId -> Set(socketId) of educators with that class open
 
-  // Per-student rows for the educator dashboard (`class:update`). Educators only: students never see each other.
-  // Throttled to one per second per class; a throttled update is not dropped but flushed once the window ends,
-  // so the dashboard never stays stale after a burst of events.
+  // Per-student rows for the educator dashboard (`class:update`), educators only. Throttled to one per second per class;
+  // a throttled update is flushed when the window ends, so the dashboard never stays stale.
   const pendingFlush = new Map();
   const broadcastClass = (classId, force = false) => {
     const now = Date.now();
@@ -150,8 +148,7 @@ module.exports = (io) => {
     }
   };
 
-  // `class_average_update` (everyone in the class sees only the average) + `class_detailed_telemetry` (educators only),
-  // at most once per second per class.
+  // `class_average_update` (everyone sees only the average) and `class_detailed_telemetry` (educators only), at most once per second.
   const emitClassAggregates = (classId, now = Date.now()) => {
     const lastBroadcast = lastBroadcastByClass.get(classId) || 0;
     if (now - lastBroadcast < MIN_BROADCAST_INTERVAL_MS) return;
@@ -168,10 +165,8 @@ module.exports = (io) => {
     });
   };
 
-  // The one place v2 heartbeats are applied, whether they arrived over the socket or over REST. Updates the EMA-smoothed
-  // score, the focus-loss / distraction counters and the rolling history, then pushes the new picture to the educators'
-  // room and to the student's own room (`student:self`, inside broadcastClass).
-  // Returns { ok, accepted, status } where `status` is the row the student's own dashboard shows.
+  // The one place v2 heartbeats are applied, from the socket or REST: updates the smoothed score, counters and history, then
+  // pushes the result to the educators' room and the student's own room. Returns { ok, accepted, status }.
   const ingestHeartbeats = (user, classId, beats, { rest = false } = {}) => {
     const now = Date.now();
     const accepted = engagement.recordHeartbeats(classId, user, beats, now, { rest });
@@ -184,8 +179,7 @@ module.exports = (io) => {
     return { ok: true, accepted, status };
   };
 
-  // REST heartbeats have no socket to remember "this student joined that class", so access is re-checked against the
-  // database, cached briefly so a 5-second heartbeat does not hit the data layer every time.
+  // REST heartbeats have no socket to remember the join, so access is re-checked against the database and cached briefly.
   const REST_ACCESS_TTL_MS = 30 * 1000;
   const restAccess = new Map(); // `${userId}:${classId}` -> { ok, error, until }
   const restAccessFor = async (user, classId) => {
@@ -212,8 +206,8 @@ module.exports = (io) => {
     if (set.size === 0) educatorSockets.delete(classId);
   };
 
-  // ---- per-socket event handlers ------------------------------------------------------------------------------
-  // Each register* function receives the connection context { socket, user, allow } and attaches one group of events.
+  // ---- per-socket event handlers ----
+  // Each register* function attaches one group of events to a connection { socket, user, allow }.
 
   // Entering a class: `join_class` (extension / original protocol), `student:enterClass`, `educator:enterClass`.
   const registerClassEntry = ({ socket, user, allow }) => {
@@ -378,8 +372,7 @@ module.exports = (io) => {
       }
     });
 
-    // 1-5 beats per message (more than one when buffered during an outage). Acknowledged, so the client knows when it may
-    // drop its buffer and can show the student the exact row the educator sees.
+    // 1-5 beats per message (more when buffered during an outage). Acknowledged, so the client knows when to drop its buffer.
     socket.on('attention:heartbeat', (payload, ack) => {
       const reply = ackOrNoop(ack);
       if (!allow('heartbeat', 10, 10000)) return reply({ ok: false, error: 'Too many heartbeats. Slow down.' });
@@ -438,7 +431,7 @@ module.exports = (io) => {
     registerDisconnect(context);
   });
 
-  // ---- server-side control: used by the REST routes and by the revalidation timer ----------------------------
+  // ---- server-side control: used by the REST routes and the revalidation timer ----
   const liveSockets = () => (io.sockets && io.sockets.sockets ? [...io.sockets.sockets.values()] : []);
 
   const kick = (socket, reason) => {
@@ -455,8 +448,8 @@ module.exports = (io) => {
   };
 
   return {
-    // REST twin of the `attention:heartbeat` socket event (POST /api/extension/heartbeat). `user` comes from the bearer
-    // token and is bound to exactly one class. Resolves to { ok, accepted, status } or { ok: false, status: <http>, error }.
+    // REST twin of `attention:heartbeat` (POST /api/extension/heartbeat). `user` comes from the bearer token and is bound to one
+    // class. Resolves to { ok, accepted, status } or { ok: false, status: <http>, error }.
     ingestHeartbeat: async (user, payload) => {
       if (!user || user.role !== 'student' || !user.classId) return { ok: false, status: 403, error: 'Student token required' };
       const parsed = HeartbeatBatchSchema.safeParse(payload);

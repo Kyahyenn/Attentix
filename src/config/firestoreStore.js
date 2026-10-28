@@ -1,12 +1,9 @@
 'use strict';
 
 /**
- * Optional persistent storage in Google Firestore (free Spark plan, no credit card).
- *
- * Why: free web hosts (Render, etc.) wipe the local disk on every restart, which would delete every account and class
- * kept in data/*.json. When FIREBASE_SERVICE_ACCOUNT is set, db.js keeps the same in-memory cache and the same API, but
- * persists to Firestore instead of files: one Firestore collection per data collection, one document per row (the
- * row's `id` is the document id). Only the rows that changed are written.
+ * Optional storage in Google Firestore (free Spark plan). Free hosts such as Render wipe the local disk on restart, which
+ * would delete data/*.json. When FIREBASE_SERVICE_ACCOUNT is set, db.js keeps the same cache and API but saves to
+ * Firestore: one collection per data collection, one document per row (the row's `id`), writing only the rows that changed.
  */
 
 const MAX_BATCH = 400; // Firestore allows 500 operations per batch; stay well under.
@@ -46,10 +43,7 @@ const diffRows = (previous, next) => {
 
 const byCreation = (a, b) => (a.createdAt || 0) - (b.createdAt || 0) || String(a.id).localeCompare(String(b.id));
 
-/**
- * `firestore` is injectable for tests; production builds it from the service account.
- * Returns { read(collection) -> rows, write(collection, previousRows, nextRows) }.
- */
+/** Returns { read(collection) -> rows, write(collection, previousRows, nextRows) }. `firestore` can be injected for tests. */
 const createFirestoreStore = ({ serviceAccount, prefix = 'attentix', firestore } = {}) => {
   let db = firestore;
   if (!db) {

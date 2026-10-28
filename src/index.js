@@ -10,8 +10,7 @@ process.on('unhandledRejection', (reason) => {
   console.error('Unhandled promise rejection:', reason);
 });
 
-// A double-clicked executable runs in a console window that vanishes the moment the process exits, so a startup error
-// would look like "it just doesn't open". Write it next to the app and keep the window up until a key is pressed.
+// A double-clicked app's console closes when the process exits, so write start-up errors next to the app and wait for a key.
 const fatal = (message, err) => {
   console.error(message, err || '');
   try {
@@ -60,10 +59,8 @@ const prepareEnvironment = async (paths) => {
 };
 
 /**
- * One server per data directory (the JSON store assumes a single owner). Checked BEFORE the heavy modules load, so a
- * second double-click does not spend seconds loading the app only to open the browser at a server that is not listening yet.
- * If another instance is running and answers, this opens it in the browser and exits the process; a lock left by a crashed
- * server is taken over. Resolves to the held lock.
+ * One server per data directory (the JSON store assumes a single owner). Checked BEFORE the heavy modules load. If another
+ * instance answers, opens it in the browser and exits; a lock left by a crashed server is taken over. Resolves to the held lock.
  */
 const acquireServerLock = async (paths) => {
   const dataDir = bootstrap.resolveDataDir(paths);
@@ -98,8 +95,7 @@ const startBackgroundJobs = ({ io, sockets, settings, memoryState, engagement })
     // socket.io is the source of truth for which sockets are alive.
     setInterval(() => memoryState.cleanupStaleConnections((socketId) => io.sockets.sockets.has(socketId)), settings.cleanupIntervalMs),
     setInterval(() => { sockets.refreshEducatorViews(); engagement.prune(); }, 3000),
-    // Safety net: even if a route forgot to disconnect someone, a student whose consent / enrolment / account is gone
-    // is dropped within a minute.
+    // Safety net: a student whose consent / enrolment / account is gone is dropped within a minute even if a route forgot.
     setInterval(() => { sockets.revalidate(); }, settings.revalidateIntervalMs)
   ];
   timers.forEach((timer) => timer.unref());
@@ -113,11 +109,11 @@ const installShutdown = ({ app, io, server, lock, stopJobs }) => {
     stopJobs();
     lock.release();
     io.close(() => process.exit(0)); // also closes the HTTP server
-    // Browsers keep idle connections open, which would hold the process up: cut them, and never linger more than 2 s.
+    // Browsers keep idle connections open: cut them, and never wait more than 2 s.
     setTimeout(() => { if (server.closeAllConnections) server.closeAllConnections(); }, 300).unref();
     setTimeout(() => process.exit(0), 2000).unref();
   };
-  // POST /api/server/shutdown lands here. Only this file installs it, so tests (which never run index.js) cannot stop anything.
+  // POST /api/server/shutdown lands here. Only this file installs it, so tests cannot stop anything.
   app.locals.requestShutdown = (source) => shutdown(`Shutdown requested from the ${source}`);
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));

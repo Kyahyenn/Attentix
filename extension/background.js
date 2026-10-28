@@ -1,18 +1,16 @@
 /* Attentix - MV3 service worker.
  *
- * Owns the Socket.IO connection and everything that depends on tabs/windows. A service worker can be stopped by Chrome
- * at any time, so everything durable lives in chrome.storage.local (the passwordless session) and the worker
- * re-hydrates itself every time it wakes up.
+ * Owns the Socket.IO connection and everything that depends on tabs/windows. Chrome can stop a service worker at any
+ * time, so anything durable lives in chrome.storage.local and the worker re-hydrates itself whenever it wakes up.
  *
  * Telemetry path:  content scripts --signals--> here --computeAttentiveness--> heartbeat --> server
- *   * one sample every TICK_MS (2 s); one heartbeat every HEARTBEAT_MS (5 s) or at once when the state changes
- *   * heartbeats go over the Socket.IO connection; if it is down they wait in a buffer of the last 5, are delivered when
- *     it comes back (Socket.IO reconnects with exponential backoff) or, after FALLBACK_AFTER_MS, over REST
- *   * the toolbar badge always shows the student's live score and state colour
+ *   * one sample every TICK_MS (2 s); one heartbeat every HEARTBEAT_MS (5 s), or at once when the state changes
+ *   * heartbeats go over Socket.IO; while it is down the last 5 wait in a buffer and are sent on reconnect or, after
+ *     FALLBACK_AFTER_MS, over REST
+ *   * the toolbar badge always shows the live score and state colour
  */
 importScripts('lib/socket.io.min.js', 'scoring.js');
-// config.js is written by the professor's server (see the educator dashboard's "Download Pre-Configured Student
-// Extension"). It is optional: a plain copy of the extension has an empty one, and a missing file must never stop the worker.
+// config.js is written by the professor's server ("Download Pre-Configured Student Extension"). It is optional: a missing file must never stop the worker.
 try { importScripts('config.js'); } catch { /* not pre-configured */ }
 
 const {
@@ -74,7 +72,7 @@ const runtime = {
   lastError: null
 };
 
-// ---- storage helpers --------------------------------------------------------------------------------------
+// ---- storage helpers ----
 const store = () => chrome.storage.local;
 // AbortSignal.timeout does not exist in every runtime; without it a request simply has no client-side timeout.
 const timeoutSignal = (ms) => (typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined);
@@ -100,7 +98,7 @@ function sanitizeSession(raw) {
   return serverUrl && session.token && session.classId && Number.isFinite(session.expiresAt) ? session : null;
 }
 
-// ---- what the student sees: score + state ----------------------------------------------------------------
+// ---- what the student sees: score + state ----
 // Prefer the server's smoothed value (it is exactly what the educator sees); fall back to the local reading while offline.
 function reading() {
   const server = runtime.server;
@@ -119,7 +117,7 @@ const healthOf = () => {
   return 'reconnecting';
 };
 
-// ---- toolbar badge ----------------------------------------------------------------------------------------
+// ---- toolbar badge ----
 function renderBadge() {
   let text = '';
   let color = STATE_COLORS.None;
@@ -144,11 +142,10 @@ function renderBadge() {
   if (chrome.action.setTitle) chrome.action.setTitle({ title });
 }
 
-// ---- meeting tabs -----------------------------------------------------------------------------------------
+// ---- meeting tabs ----
 const findMeetingTabs = async () => (await chrome.tabs.query({ url: MEETING_URL_PATTERNS })).filter((t) => isMeetingUrl(t.url));
 
-// Tabs that were already open when the extension was installed/reloaded never got the content script from the
-// manifest. Without this the signals would silently be missing until the student reloads Meet.
+// Tabs open before the extension was installed/reloaded never got the content script: inject it, or signals stay missing until the student reloads Meet.
 async function injectContentScripts() {
   const tabs = await chrome.tabs.query({ url: MEETING_URL_PATTERNS });
   await Promise.all(tabs.map((tab) =>
@@ -163,7 +160,7 @@ async function deliverPrompt(text) {
   await Promise.all(tabs.map((tab) => Promise.resolve(chrome.tabs.sendMessage(tab.id, message, { frameId: 0 })).catch(() => {})));
 }
 
-// ---- session end ------------------------------------------------------------------------------------------
+// ---- session end ----
 // Stops telemetry, forgets the token and class, and leaves a notice for the popup to show on the Join form.
 async function endSession(kind, text) {
   runtime.session = null;
@@ -175,7 +172,7 @@ async function endSession(kind, text) {
   renderBadge();
 }
 
-// ---- socket -----------------------------------------------------------------------------------------------
+// ---- socket ----
 function closeSocket() {
   if (runtime.socket) {
     runtime.socket.removeAllListeners();
@@ -192,9 +189,8 @@ const emitIfJoined = (event, payload, ack) => {
 
 const markOffline = () => { if (runtime.offlineSince === null) runtime.offlineSince = Date.now(); };
 
-// Resolves { ok: true } once the class was joined, { ok: false, fatal: true, error } when the server refuses the student
-// for good, or { ok: true, degraded: true } when the server cannot be reached yet (reconnecting keeps trying; heartbeats
-// are buffered and can go over REST meanwhile).
+// Resolves { ok: true } once the class was joined, { ok: false, fatal: true, error } when the server refuses the student for
+// good, or { ok: true, degraded: true } when the server is unreachable (it keeps retrying; heartbeats are buffered or sent over REST).
 async function connectAndJoin() {
   if (runtime.connecting) return runtime.connecting;
   runtime.connecting = (async () => {
@@ -215,8 +211,7 @@ async function connectAndJoin() {
         settle({ ok: true, degraded: true });
       }, CONNECT_TIMEOUT_MS);
 
-      // WebSocket only: XHR long-polling does not exist inside a service worker. Reconnection uses Socket.IO's
-      // exponential backoff: 1 s, 2 s, 4 s ... capped at 30 s, with +-50% jitter so a whole class does not reconnect in step.
+      // WebSocket only: XHR long-polling does not exist in a service worker. Reconnects use exponential backoff (1 s up to 30 s, +-50% jitter) so a class does not reconnect in step.
       const socket = io(session.serverUrl, {
         transports: ['websocket'],
         auth: { token: session.token },
@@ -254,8 +249,7 @@ async function connectAndJoin() {
         runtime.joined = false;
         markOffline();
         renderBadge();
-        // Socket.IO retries by itself after a network drop, but NOT after the server closed this socket (restart,
-        // connection limit...). session:revoked already ended the session if the server meant it for good.
+        // Socket.IO retries after a network drop but NOT after the server closed this socket (restart, connection limit...). session:revoked already ended the session if that was final.
         if (reason === 'io server disconnect') setTimeout(() => { if (runtime.socket === socket && runtime.session) socket.connect(); }, 2000);
       });
       socket.on('chat:prompt', (payload) => { deliverPrompt(payload && payload.text); });
@@ -291,7 +285,7 @@ async function connectAndJoin() {
   return runtime.connecting;
 }
 
-// ---- heartbeats -------------------------------------------------------------------------------------------
+// ---- heartbeats ----
 const beatPayload = (beats, now) => ({
   beats: beats
     .map((b) => ({
@@ -359,7 +353,7 @@ async function flush() {
   }
 }
 
-// ---- monitoring lifecycle ---------------------------------------------------------------------------------
+// ---- monitoring lifecycle ----
 function startLoop() {
   if (runtime.timer) return;
   runtime.switchTracker = newSwitchTracker();
@@ -444,9 +438,8 @@ async function rehydrate() {
   renderBadge();
 }
 
-// What is the student looking at right now? Opening the extension popup makes Chrome report the browser window as not
-// focused, so while the popup is open (or just closed) the window still counts as the one the student is in; the
-// extension's own pages count as part of class, like the Attentix website.
+// What is the student looking at? Opening the popup makes Chrome report the window as unfocused, so while it is open (or just
+// closed) the window still counts as the student's; the extension's own pages count as class, like the Attentix website.
 async function readLocation(session, now) {
   const popupOpen = runtime.popupPorts.size > 0 || now - runtime.popupSeenAt < POPUP_SEEN_MS || now - runtime.popupClosedAt < POPUP_GRACE_MS;
   const win = await chrome.windows.getLastFocused({ populate: true, windowTypes: ['normal', 'popup'] });
@@ -473,10 +466,9 @@ function queueHeartbeatIfDue(result, location, isFocused, now) {
   runtime.lastBeatKey = key;
 }
 
-// ---- one sample every TICK_MS -------------------------------------------------------------------------------
-// Tab/window state is read here (authoritative) instead of from the page: Chrome throttles timers in background
-// tabs, so a page script cannot be trusted to report "I am hidden" on time. The page supplies what only it can see:
-// interaction cadence, scrolling, media playback.
+// ---- one sample every TICK_MS ----
+// Tab/window state is read here (authoritative): Chrome throttles timers in background tabs, so a page script cannot report
+// "I am hidden" on time. The page supplies only what it can see: interaction cadence, scrolling, media playback.
 async function tick() {
   const session = runtime.session;
   if (!session) return;
@@ -536,7 +528,7 @@ async function tick() {
   flush();
 }
 
-// ---- messages ---------------------------------------------------------------------------------------------
+// ---- messages ----
 const ready = rehydrate();
 
 async function statusSnapshot({ forPage = false } = {}) {
@@ -656,9 +648,8 @@ if (chrome.tabs.onRemoved) {
 chrome.alarms.create('keepalive', { periodInMinutes: 0.5 });
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === 'keepalive') rehydrate(); });
 chrome.runtime.onStartup.addListener(() => { rehydrate(); });
-// The professor's server address (from config.js) becomes the remembered address, so everything that reads `prefs` (the
-// popup after "Switch Class / Disconnect", a re-loaded newer copy of the extension) points at the right server. Only the
-// server is stored: the class code is re-read from config.js by the popup each time.
+// The server address from config.js becomes the remembered address, so everything reading `prefs` points at the right server.
+// Only the address is stored; the popup re-reads the class code from config.js each time.
 async function applyPreconfig() {
   const cfg = globalThis.AMP_PRECONFIG;
   const serverUrl = cfg && typeof cfg.serverUrl === 'string' && /^https?:\/\//i.test(cfg.serverUrl) ? originOf(cfg.serverUrl) : null;

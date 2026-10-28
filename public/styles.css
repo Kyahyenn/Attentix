@@ -565,10 +565,8 @@ body:has(#dashboard.hidden).has-tabs { padding-bottom: 0; }
 .container.reading > .card { border-top: 3px solid var(--gold); }
 
 
-/* ==========================================================================================================
-   Colour themes (Settings > Appearance). Maroon is the default and needs no override.
-   Each theme sets the same handful of tokens; text on --accent / --header-bg stays at 7:1 or better.
-   ========================================================================================================== */
+/* ---------- Colour themes (Settings > Appearance) ----------
+   Maroon is the default and needs no override. Each theme sets the same tokens; text on --accent / --header-bg stays at 7:1 or better. */
 :root[data-palette="ocean"] { --maroon: #0b4f8a; --accent: #0b4f8a; --accent-hover: #083d6b; --accent-soft: #e8f0f8; --link: #0b4f8a; --focus: #0b4f8a; --header-bg: #0b4f8a; }
 :root[data-palette="forest"] { --maroon: #1f5f3a; --accent: #1f5f3a; --accent-hover: #174a2d; --accent-soft: #e7f3ec; --link: #1f5f3a; --focus: #1f5f3a; --header-bg: #1f5f3a; }
 :root[data-palette="graphite"] { --maroon: #2f3b4a; --accent: #2f3b4a; --accent-hover: #1f2833; --accent-soft: #eceff3; --link: #2f3b4a; --focus: #2f3b4a; --header-bg: #2f3b4a; }
@@ -578,9 +576,7 @@ body:has(#dashboard.hidden).has-tabs { padding-bottom: 0; }
 :root[data-palette="ocean"] .class-code, :root[data-palette="forest"] .class-code, :root[data-palette="graphite"] .class-code { background: var(--accent-soft); border-color: var(--accent); }
 :root[data-theme="dark"][data-palette] .class-code { color: var(--accent); }
 
-/* ==========================================================================================================
-   High contrast (Settings > Accessibility, or the device's "more contrast" setting).
-   ========================================================================================================== */
+/* ---------- High contrast (Settings > Accessibility, or the device's "more contrast" setting) ---------- */
 :root[data-contrast="high"] {
   --bg: #ffffff; --card: #ffffff; --card-alt: #ffffff; --text: #000000; --muted: #1f1f1f; --line: #000000; --input-line: #000000;
   --maroon: #000000; --accent: #000000; --accent-hover: #262626; --accent-text: #ffffff; --accent-soft: #e6e6e6;
@@ -633,9 +629,7 @@ body:has(#dashboard.hidden).has-tabs { padding-bottom: 0; }
 :root[data-focus="strong"] .app-header :focus-visible { outline-color: var(--gold-bright); }
 :root[data-focus="strong"] .switch:focus-visible + .switch-track, :root[data-focus="strong"] .choice input:focus-visible + .choice-face { outline-width: 4px; outline-offset: 3px; }
 
-/* ==========================================================================================================
-   Loading + empty states
-   ========================================================================================================== */
+/* ---------- Loading + empty states ---------- */
 .loading-row { display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 2rem 1rem; color: var(--muted); font-weight: 600; }
 .spinner { width: 1.25rem; height: 1.25rem; flex: none; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -643,9 +637,7 @@ body:has(#dashboard.hidden).has-tabs { padding-bottom: 0; }
 .class-list > .empty { border: 1px dashed var(--line); border-radius: var(--r-lg); background: var(--card-alt); }
 td.table-empty { white-space: normal; text-align: center; padding: 1.5rem 1rem; }
 
-/* ==========================================================================================================
-   Settings page
-   ========================================================================================================== */
+/* ---------- Settings page ---------- */
 .settings-layout { display: grid; grid-template-columns: 12.5rem minmax(0, 1fr); gap: 1.5rem; align-items: start; }
 .settings-nav { position: sticky; top: 5.25rem; }
 .settings-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.125rem; }
@@ -723,9 +715,7 @@ details.key-help summary { cursor: pointer; font-weight: 650; padding: 0.25rem 0
   .choice input:checked + .choice-face { border-color: Highlight; box-shadow: inset 0 0 0 2px Highlight; }
 }
 
-/* ==========================================================================================================
-   Final polish: smaller screens
-   ========================================================================================================== */
+/* ---------- Smaller screens ---------- */
 @media (max-width: 56.25rem) {
   .settings-layout { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
   .settings-nav { position: static; }

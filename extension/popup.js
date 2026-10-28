@@ -1,14 +1,14 @@
 /* Attentix popup.
  *
  * Views (document.body.dataset.view):
- *   loading       asking the background worker whether this browser already joined a class (spinner)
+ *   loading       asking the background worker whether this browser already joined a class
  *   idle          not joined: the Join Class form, with inline validation
- *   joining       the form was submitted: fields disabled, spinner on the button (also the `loading` look)
- *   connected     joined and talking to the server: score ring, state, class + student, connection health
- *   reconnecting  joined, but the server cannot be reached (or only the REST backup works): same view + a banner with Retry
+ *   joining       form submitted: fields disabled, spinner on the button
+ *   connected     joined and talking to the server: score ring, state, class and student, connection health
+ *   reconnecting  joined, but the server is unreachable (or only the REST backup works): same view plus a Retry banner
  *
- * The popup never handles a password. Joining is one POST to /api/extension/join; the signed token that comes back goes to
- * the background worker, which keeps the session in chrome.storage.local.
+ * The popup never handles a password. Joining is one POST to /api/extension/join; the signed token goes to the
+ * background worker, which keeps the session in chrome.storage.local.
  */
 (() => {
   'use strict';
@@ -29,16 +29,15 @@
   }
   keepPresence();
 
-  // ---- pure helpers ---------------------------------------------------------------------------------------
+  // ---- pure helpers ----
   function normalizeServer(raw) {
     let url;
     try { url = new URL(String(raw).trim()); } catch { return null; }
     return url.protocol === 'http:' || url.protocol === 'https:' ? url.origin : null;
   }
 
-  // Name and email cross the network. Plain http:// is accepted only for this computer and for the professor's own
-  // classroom network (private addresses such as 192.168.x.x, 10.x.x.x, 172.16-31.x.x, or a .local name): the traffic
-  // stays on that network. Anything else on the internet must use https://.
+  // Name and email cross the network, so plain http:// is accepted only for this computer and the professor's own network
+  // (private addresses such as 192.168.x.x, 10.x.x.x, 172.16-31.x.x, or a .local name). Anything else must use https://.
   const PRIVATE_HOST = /^(localhost|127(\.\d{1,3}){3}|\[::1\]|10(\.\d{1,3}){3}|192\.168(\.\d{1,3}){2}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|169\.254(\.\d{1,3}){2}|[a-z0-9-]+(\.[a-z0-9-]+)*\.local)$/i;
   const isPlainHttpRemote = (origin) => {
     if (!origin.startsWith('http://')) return false;
@@ -111,7 +110,7 @@
     return errors;
   }
 
-  // ---- field error display --------------------------------------------------------------------------------
+  // ---- field error display ----
   function setFieldError(key, message) {
     const { input, error } = FIELDS[key];
     const line = $(error);
@@ -135,8 +134,7 @@
     if (first) $(FIELDS[first].input).focus();
   };
 
-  // When the educator's server address came with the extension, keep it out of the way (but visible, so a student
-  // always sees where their data goes); otherwise the Advanced section starts open so the field is not hidden.
+  // When the educator's server address came with the extension, keep it collapsed but visible (students should see where their data goes); otherwise start the Advanced section open.
   function applyServerPresentation() {
     const preconfigured = Boolean(PRECONFIG.serverUrl);
     $('advanced').open = !preconfigured;
@@ -144,7 +142,7 @@
     if (preconfigured) $('serverShown').textContent = PRECONFIG.serverUrl;
   }
 
-  // ---- view switching -------------------------------------------------------------------------------------
+  // ---- view switching ----
   const ui = { view: 'loading', joining: false, joinBanner: false, bannerKey: '', liveKey: '' };
 
   function setView(view) {
@@ -192,7 +190,7 @@
     setView(on ? 'joining' : 'idle');
   }
 
-  // ---- connected view -------------------------------------------------------------------------------------
+  // ---- connected view ----
   const STATE_HINTS = {
     Focused: 'You are active in your class tab.',
     Passive: 'Watching or listening to the class counts.',
@@ -281,7 +279,7 @@
     announce(`${state || 'Idle'}. ${status.health === 'connected' ? 'Connected' : status.health === 'fallback' ? 'Using backup connection' : 'Reconnecting'}.`);
   }
 
-  // ---- idle view ------------------------------------------------------------------------------------------
+  // ---- idle view ----
   function renderIdle(status) {
     setView('idle');
     const notice = status && status.notice;
@@ -306,7 +304,7 @@
     if (status.session) { ui.joinBanner = false; renderConnected(status); } else renderIdle(status);
   }
 
-  // ---- join -----------------------------------------------------------------------------------------------
+  // ---- join ----
   class JoinError extends Error {
     constructor(message, { field = null, network = false, fields = null } = {}) { super(message); this.field = field; this.network = network; this.fields = fields; }
   }
@@ -397,7 +395,7 @@
     }
   }
 
-  // ---- events ---------------------------------------------------------------------------------------------
+  // ---- events ----
   function updatePrivacyLink() {
     const origin = normalizeServer($('serverUrl').value);
     const link = $('privacyLink');
@@ -439,12 +437,11 @@
     announce('You left the class. Enter a class code to join another.');
   });
 
-  // ---- start ----------------------------------------------------------------------------------------------
+  // ---- start ----
   (async function init() {
     setView('loading');
     const { prefs } = await chrome.storage.local.get('prefs');
-    // Educator's pre-configured address wins over whatever an earlier install remembered (the professor's address may have
-    // changed); then the last address used; then localhost.
+    // The educator's pre-configured address wins over an earlier install's, then the last address used, then localhost.
     $('serverUrl').value = PRECONFIG.serverUrl || (prefs && prefs.serverUrl) || DEFAULT_SERVER;
     $('classCode').value = PRECONFIG.classCode;
     applyServerPresentation();

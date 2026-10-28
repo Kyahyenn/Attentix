@@ -1,8 +1,6 @@
-// Per-class, per-student engagement picture that feeds the educator dashboard's `class:update` event.
-// Two kinds of data can feed it, and both end up in the same row:
-//   * the web student page  -> activity events (mouse/keyboard, tab hidden/blur) + chat responses
-//   * the Chrome extension  -> a 0-100 attentiveness score from the Meet/Zoom tab. v2 clients send heartbeats
-//     (score + Focused/Passive/Distracted/Idle state) that are smoothed here with a time-weighted EMA.
+// Per-class, per-student engagement picture behind the dashboard's `class:update` event. Two sources feed the same row:
+//   * the web student page -> activity events (mouse/keyboard, tab hidden/blur) and chat responses
+//   * the Chrome extension -> a 0-100 score; v2 clients send heartbeats (score + state), smoothed here with a time-weighted EMA
 const IDLE_LIMIT_MS = 60 * 1000;          // same thresholds the dashboard page uses for its summary tiles
 const CHAT_RESPONSE_LIMIT_MS = 45 * 1000;
 const TAB_SWITCH_LIMIT = 3;
@@ -10,7 +8,7 @@ const EXTENSION_ATTENTIVE_MIN = 60;       // focus score below this = not attent
 const EXTENSION_STALE_MS = 30 * 1000;     // extension score older than this is ignored
 const FORGET_OFFLINE_AFTER_MS = 60 * 60 * 1000;
 
-// ---- v2 heartbeats -----------------------------------------------------------------------------------------
+// ---- v2 heartbeats ----
 const EMA_TAU_MS = 10 * 1000;             // smoothing time constant: a step change is ~63% reflected after 10 s
 const MIN_DT_MS = 250;                    // dt is clamped so a burst of buffered beats can neither freeze nor jump the EMA
 const MAX_DT_MS = 60 * 1000;
@@ -76,8 +74,7 @@ class EngagementState {
     rec.pageSeenAt = now;
     rec.lastActivityAt = now;
     if (INPUT_EVENTS.has(eventType)) rec.lastInputAt = now;
-    // While the extension is reporting, it is the authority on tab switches. The student page would otherwise count
-    // every trip from the app's page to the meeting tab (exactly where the student is supposed to be) as a switch.
+    // While the extension is reporting, it decides tab switches; otherwise the student page would count every trip to the meeting tab.
     const extensionFresh = rec.scoreAt > 0 && now - rec.scoreAt < EXTENSION_STALE_MS;
     if (tabHidden && !rec.tabHidden && !extensionFresh) rec.tabSwitchCount += 1;
     rec.tabHidden = Boolean(tabHidden);
@@ -95,8 +92,8 @@ class EngagementState {
 
 
   // v2 extension heartbeats: [{ score, state, location?, isFocused, idleSeconds?, ageMs? }], oldest first.
-  // `ageMs` (how long ago the client took the sample) is used instead of a client timestamp so a wrong client clock
-  // cannot reorder, backdate or future-date anything. Returns how many beats were accepted.
+  // v2 heartbeats: [{ score, state, location?, isFocused, idleSeconds?, ageMs? }], oldest first. `ageMs` is used instead of a
+  // client timestamp so a wrong clock cannot reorder or backdate anything. Returns how many beats were accepted.
   recordHeartbeats(classId, user, beats, now = Date.now(), opts = {}) {
     const rec = this._record(classId, user);
     if (opts.rest) rec.restSeenAt = now;
@@ -111,8 +108,7 @@ class EngagementState {
       const score = Math.min(100, Math.max(0, Number(beat.score)));
       if (!Number.isFinite(score)) continue;
 
-      // Time-weighted EMA: alpha depends on the real gap between samples, so 5 beats flushed at once after an outage
-      // weigh the same as the same 5 beats sent live.
+      // Time-weighted EMA: the weight depends on the real gap between samples, so 5 beats flushed after an outage count the same as 5 live.
       if (!rec.lastBeatAt || rec.smooth === null) {
         rec.focusScore = Math.round(score);
         rec.smooth = score;
@@ -167,8 +163,7 @@ class EngagementState {
     rec.lastActivityAt = now;
   }
 
-  // The extension reports that the student SENT a message in the Meet/Zoom chat. Only the fact - never the text.
-  // If an educator question is waiting, that message counts as the answer.
+  // The extension reports that the student SENT a chat message (only the fact, never the text). It counts as the answer to a waiting question.
   recordMeetingChat(classId, user, now = Date.now()) {
     const rec = this._record(classId, user);
     rec.meetingChatMessages += 1;
@@ -209,10 +204,9 @@ class EngagementState {
   }
 
   /**
-   * The row's view of a student whose extension is reporting: { tabHidden, reasons }. The extension wins while it is
-   * reporting (a student on the Meet tab is "hidden" from the web page's view). The student's CURRENT state decides, so
-   * the row flips back the moment they return to the meeting; the smoothed score lags by ~10-20 s and is only used when
-   * the client reported neither a location nor a focus flag.
+   * The row's view of a student whose extension is reporting: { tabHidden, reasons }. The extension wins while reporting.
+   * The CURRENT state decides, so the row flips back as soon as they return; the smoothed score lags ~10-20 s and is only
+   * used when the client sent neither a location nor a focus flag.
    */
   _extensionView(rec, mouseIdleMs) {
     const v2 = rec.attentionState !== null;
@@ -224,8 +218,7 @@ class EngagementState {
 
     if (away) reasons.push(`Meeting tab not in focus (focus score ${rec.focusScore}%).`);
     else if (v2) {
-      // v2 clients already weigh media playback, reading/scrolling and typing cadence, so "no mouse for a minute"
-      // (a student watching the lecture) is NOT a flag. Only the client's own Idle / Distracted verdicts are.
+      // v2 clients already weigh media, reading and typing, so "no mouse for a minute" is NOT a flag; only their own Idle / Distracted verdicts are.
       if (rec.attentionState === 'Idle') reasons.push(`No activity in the meeting for ${Math.round((mouseIdleMs || 0) / 1000)}s and nothing playing.`);
       else if (rec.attentionState === 'Distracted') reasons.push('Switching between tabs or apps rapidly.');
     } else if (rec.extState !== 'tool' && mouseIdleMs !== null && mouseIdleMs >= IDLE_LIMIT_MS) {
@@ -302,8 +295,7 @@ class EngagementState {
     return changed;
   }
 
-  // "Start fresh": zeroes the counters and scores of a class but keeps who is currently connected.
-  // Offline students are dropped entirely.
+  // "Start fresh": zeroes counters and scores but keeps who is connected; offline students are dropped.
   resetClass(classId, now = Date.now()) {
     const classMap = this.classes.get(classId);
     if (!classMap) return;

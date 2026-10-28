@@ -1,12 +1,10 @@
 const crypto = require('crypto');
 const settings = require('../config/settings');
 
-// Stateless HMAC-signed bearer token for the browser extension (and the optional student dashboard).
-// Payload: { uid, exp, tv } plus, for students, { studentId, name, email, classId, classCode }. The token is SIGNED,
-// not encrypted: its holder (the student) can read it, nobody can change it. The claims are a convenience for the
-// client; the server never trusts them for authorisation: the student is re-loaded from the database on every use
-// (so deleting a student takes effect immediately and a renamed student shows the new name), and `tv` (the user's
-// tokenVersion) lets "sign out everywhere" revoke every token issued before it.
+// Stateless HMAC-signed bearer token for the extension. Payload: { uid, exp, tv } plus, for students, { studentId, name,
+// email, classId, classCode }. It is SIGNED, not encrypted: the holder can read it but nobody can change it. The server
+// never trusts the claims for authorisation: the student is re-loaded from the database on every use, and `tv` (the
+// user's tokenVersion) lets "sign out everywhere" revoke earlier tokens.
 const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 const MAX_TOKEN_LENGTH = 1024; // name (<=100) + email (<=254) + ids make a student token ~700 characters
 

@@ -4,10 +4,9 @@ const { findClassByCode } = require('./classes');
 
 const emailOf = (user) => String(user.email || user.username || '').toLowerCase();
 
-// ---- educators --------------------------------------------------------------------------------------------------
-// Hash + atomic duplicate-checked insert (throws 409). `username` mirrors `email` so records stay readable by the
-// login code that predates the email field. The duplicate check only looks at educators: a student row that happens
-// to carry the same email must never block (or be mistaken for) the professor's account.
+// ---- educators ----
+// Hash + atomic duplicate-checked insert (throws 409). `username` mirrors `email` for older login code. The duplicate
+// check only looks at educators, so a student row with the same email never blocks the professor's account.
 const registerEducator = async ({ name, email, password }) => {
   const hashedPassword = await bcrypt.hash(password, 10);
   return db.insertUnique(
@@ -21,9 +20,9 @@ const registerEducator = async ({ name, email, password }) => {
 const findEducatorByEmail = async (email) =>
   (await db.readData('users')).find((u) => u.role === 'educator' && emailOf(u) === email);
 
-// ---- students (passwordless) ------------------------------------------------------------------------------------
-// A student is identified by (email, classId): the same person in two classes is two records, so history never leaks
-// between classes, and the same person re-joining the same class gets the SAME studentId back (history is kept).
+// ---- students (passwordless) ----
+// A student is identified by (email, classId): the same person in two classes is two records, and re-joining the same
+// class returns the SAME studentId (history is kept).
 const isStudentOf = (email, classId) => (u) => u.role === 'student' && u.email === email && u.classId === classId;
 
 const findStudent = async (email, classId) => (await db.readData('users')).find(isStudentOf(email, classId));
@@ -49,9 +48,8 @@ const ensureEnrollment = async (classId, studentId) => {
   }
 };
 
-// Who is asking? A bearer token (extension) wins; otherwise the caller proves identity with { email, classCode },
-// which is all a passwordless student has. Returns { student, klass } or null. Wrong code and unknown email give the
-// same null so the response cannot be used to learn which emails are enrolled where.
+// Who is asking? A bearer token (extension) wins; otherwise { email, classCode } proves identity. Returns { student, klass }
+// or null. A wrong code and an unknown email give the same null, so responses cannot reveal who is enrolled.
 const resolveStudent = async (req, { email, classCode } = {}) => {
   const sessionUser = req.session && req.session.user;
   if (sessionUser && sessionUser.role === 'student' && sessionUser.classId) {
@@ -65,10 +63,9 @@ const resolveStudent = async (req, { email, classCode } = {}) => {
   return student ? { student, klass } : null;
 };
 
-// ---- erasure ----------------------------------------------------------------------------------------------------
-// Right to erasure: removes a user and everything that hangs off them. Educators also take their classes (and those
-// classes' enrolments, and the students who only existed for those classes) with them. Returns the ids of the
-// classes that were deleted so live sockets can be closed.
+// ---- erasure ----
+// Right to erasure: removes a user and everything attached. Educators also take their classes, enrolments and the
+// students who only existed for those classes. Returns the deleted class ids so live sockets can be closed.
 const deleteAccountData = async (user) => {
   let removedClassIds = [];
 

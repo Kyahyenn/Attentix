@@ -32,7 +32,7 @@
   const hasToken = () => session.has();
   const notice = (text) => { const box = byId('sessionNotice'); box.textContent = text; box.classList.toggle('hidden', !text); };
 
-  // ---- rendering --------------------------------------------------------------------------------------------------
+  // ---- rendering ----
   const fmtIdle = (ms) => (ms === null || ms === undefined ? '–' : ms < 1000 ? 'just now' : `${Math.round(ms / 1000)} s`);
 
   // Server time, not the browser clock, decides freshness: a student's laptop clock may be minutes off.
@@ -137,7 +137,7 @@
     renderPrivacy(data);
   }
 
-  // ---- loading / polling --------------------------------------------------------------------------------------------
+  // ---- loading / polling ----
   function showLookup(message) {
     stopPolling();
     show('pageLoading', false);
@@ -198,7 +198,7 @@
     byId('liveTitle').focus();
   }
 
-  // ---- lookup form (no token) --------------------------------------------------------------------------------------
+  // ---- lookup form (no token) ----
   const codeInput = byId('lookupClassCode');
   codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
   const FIELDS = { name: 'lookupName', email: 'lookupEmail', classCode: 'lookupClassCode' };
@@ -226,7 +226,7 @@
     }, 'Looking up…');
   });
 
-  // ---- privacy & consent controls ---------------------------------------------------------------------------------
+  // ---- privacy & consent controls ----
   byId('consentToggleBtn').addEventListener('click', async () => {
     if (!current) return;
     const withdrawing = current.consent.accepted;
@@ -297,7 +297,7 @@
   // This browser only: the token stays valid until it expires (12 h) or is revoked with "Sign out everywhere".
   byId('signOutBtn').addEventListener('click', () => { ended = true; stopPolling(); session.clear(); navigate('/join.html'); });
 
-  // ---- boot ---------------------------------------------------------------------------------------------------------
+  // ---- boot ----
   (async function init() {
     session.consumeUrlToken(); // student.html?token=... -> stored, then removed from the address bar via history.replaceState
     if (!hasToken()) { showLookup(); return; }

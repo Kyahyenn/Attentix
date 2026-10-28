@@ -33,7 +33,7 @@
   const setBadge = (text, cls) => { const b = byId('liveBadge'); b.textContent = text; b.className = `badge ${cls || ''}`.trim(); };
   const spell = (code) => String(code).split('').join(' '); // "ABC234" -> "A B C 2 3 4" for screen readers
 
-  // ---- auth + socket ----------------------------------------------------------------------------------------
+  // ---- auth + socket ----
   async function checkAuth() {
     try {
       const data = await api('/api/me');
@@ -64,7 +64,7 @@
     });
   }
 
-  // ---- check-in alerts (Settings > General > Notifications) ----------------------------------------------------------
+  // ---- check-in alerts (Settings > General > Notifications) ----
   // One alert when the open class's average drops below the check-in threshold, then silence until it has recovered a
   // little (hysteresis) and a couple of minutes have passed. The text never names a student.
   const ALERT_RECOVER_AT = CHECK_IN_THRESHOLD + 5;
@@ -89,7 +89,7 @@
     toast(message, false, { force: true });
   }
 
-  // ---- copy buttons ---------------------------------------------------------------------------------------------
+  // ---- copy buttons ----
   // One-click copy with feedback in three places: the button label, an inline status next to it, and a toast.
   const feedbackTimers = new WeakMap();
   async function copyWithFeedback(button, statusEl, text, what) {
@@ -106,7 +106,7 @@
     }, COPY_FEEDBACK_MS));
   }
 
-  // ---- pre-configured extension download -----------------------------------------------------------------------
+  // ---- pre-configured extension download ----
   // fetch + blob instead of a plain link so an expired session or an error shows a message instead of saving a JSON
   // error body as "Attentix-Extension-XXXXXX.zip".
   async function downloadExtension(klass) {
@@ -132,7 +132,7 @@
     }
   }
 
-  // ---- server address + shutdown ----------------------------------------------------------------------------------
+  // ---- server address + shutdown ----
   async function loadServerInfo() {
     let info;
     try { info = await api('/api/server-info'); } catch { return; } // the panel is a convenience: never block the dashboard
@@ -188,7 +188,7 @@
     heading.focus();
   }
 
-  // ---- classes ----------------------------------------------------------------------------------------------
+  // ---- classes ----
   // A class code is permanent (the server refuses to change it), so there is deliberately no "new code" action.
   // The list lives on the Classes tab; one class lives on its own page, #class/<id> (see syncRoute).
   const VIEW_KEY = 'am.classes.view';
@@ -359,7 +359,7 @@
   }
   const ensureClasses = () => { if (!classesReady) classesReady = loadClasses(); return classesReady; };
 
-  // ---- Home: totals, recently opened, recent activity ---------------------------------------------------------------
+  // ---- Home: totals, recently opened, recent activity ----
   function renderOverview() {
     const sum = (key) => allClasses.reduce((total, k) => total + (Number(k[key]) || 0), 0);
     const scored = sum('scoredCount');
@@ -396,7 +396,7 @@
     byId('activityEmpty').hidden = items.length > 0;
   }
 
-  // ---- one class: #class/<id> ---------------------------------------------------------------------------------------
+  // ---- one class: #class/<id> ----
   const routeClassId = () => { const m = /^#class\/([^/]+)$/.exec(window.location.hash || ''); return m ? decodeURIComponent(m[1]) : null; };
 
   function resetLiveView() {
@@ -459,7 +459,7 @@
     document.title = `Class not found · Attentix`;
   }
 
-  // ---- create class (dialog) --------------------------------------------------------------------------------------
+  // ---- create class (dialog) ----
   const createDialog = () => byId('createClassDialog');
   function openCreateDialog() {
     setText('createClassError', '');
@@ -473,7 +473,7 @@
     try { dialog.close(); } catch { dialog.removeAttribute('open'); }
   }
 
-  // ---- rendering --------------------------------------------------------------------------------------------
+  // ---- rendering ----
   // Updates arrive about once a second. Rendering is coalesced into one animation frame, skipped while the tab is
   // hidden (it catches up on return) and the table is patched in place instead of being rebuilt.
   let renderQueued = false;
@@ -508,7 +508,7 @@
     setIfChanged(byId('metricUnanswered'), String(stats.unanswered));
   }
 
-  // ---- roster -----------------------------------------------------------------------------------------------
+  // ---- roster ----
   const rowCache = new Map(); // studentId -> { tr, cells }
   let lastOrder = [];         // student ids in the order currently on screen
   let lastOrderKey = null;
@@ -602,7 +602,7 @@
     setIfChanged(byId('rosterCount'), latestStudents.length ? `Showing ${rows.length} of ${latestStudents.length} students${unscored}.` : 'No students yet.');
   }
 
-  // ---- charts ---------------------------------------------------------------------------------------------
+  // ---- charts ----
   // Every chart is fed plain JSON ({ labels, values }). js/chartMatrix.js turns that into a line, bar or doughnut chart
   // (or, for the trendline, a single time series), remembers the choice per chart, and rebuilds itself when the theme or
   // the text size changes. Charts resize with their container (see .chart-box / .chart-card in styles.css).
@@ -637,7 +637,7 @@
     if (averageSamples.length) averageChart.update({ labels: averageSamples.map((p) => p.label), values: averageSamples.map((p) => p.value) });
   }
 
-  // ---- CSV export -------------------------------------------------------------------------------------------
+  // ---- CSV export ----
   // Spreadsheet formula injection guard: a name like =HYPERLINK(...) must not run when the file is opened.
   function sanitizeCsvCell(cell) {
     let str = String(cell == null ? '' : cell);
@@ -684,7 +684,7 @@
     catch (err) { toast(err.message, true); }
   }
 
-  // ---- events -----------------------------------------------------------------------------------------------
+  // ---- events ----
   byId('createClassForm').addEventListener('submit', async (event) => {
     event.preventDefault();
     const nameInput = byId('classNameInput');

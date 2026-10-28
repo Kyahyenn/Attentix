@@ -12,8 +12,8 @@ const { buildExtensionZip, renderConfigJs } = require('../utils/extensionBundle'
 
 const router = express.Router();
 
-// Keeps the educator's own unpacked extension folder in step with the class they last downloaded for. Skipped inside a
-// packaged executable (its extension/ is a read-only snapshot) and under `npm test` unless a test names a target file.
+// Keeps the educator's own unpacked extension folder in step with the class they last downloaded. Skipped in a packaged app
+// (read-only snapshot) and under `npm test` unless a test names a target file.
 const localConfigTarget = (req) => {
   if (req.app.locals.extensionConfigPath) return req.app.locals.extensionConfigPath;
   if (settings.paths.packaged || settings.nodeEnv === 'test') return null;

@@ -42,9 +42,8 @@ router.get('/student/classes', requireStudent, async (req, res) => {
 const pickLookupSchema = (req, res, next) =>
   (req.session && req.session.viaBearer ? next() : validate(StudentLookupSchema)(req, res, next));
 
-// POST /api/student/lookup - READ-ONLY. A passwordless student sees their own class, consent and live engagement.
-// Nothing is created or changed here (joining is POST /api/extension/join), and `name` is never used to match.
-// A student can only ever see their own row: the live status is the same one the educator sees, minus identifiers.
+// POST /api/student/lookup - READ-ONLY. A passwordless student sees their own class, consent and live engagement (the row an
+// educator sees, minus identifiers). Nothing is changed here, and `name` is never used to match.
 router.post('/student/lookup', joinLimiter, pickLookupSchema, async (req, res) => {
   try {
     const found = await resolveStudent(req, req.body || {});

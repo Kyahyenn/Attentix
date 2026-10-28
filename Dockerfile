@@ -1,19 +1,19 @@
 FROM node:20-alpine AS builder
 WORKDIR /usr/src/app
 COPY package*.json ./
-# --omit=dev replaces the deprecated --only=production: test/lint tooling never reaches the image.
+# Production dependencies only: test and lint tools never reach the image.
 RUN npm ci --omit=dev
 
 FROM node:20-alpine
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
-# Containers are configured through their environment: no .env generation, no port fallback, no browser to open.
+# Configured through the environment: no .env generation, no port fallback, no browser to open.
 ENV AUTO_ENV=false NO_AUTO_OPEN=true
 
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY . .
 
-# Application code stays owned by root (read-only for the runtime user); only the data directory is writable.
+# App code stays root-owned (read-only for the app user); only data/ is writable.
 RUN mkdir -p /usr/src/app/data && chown -R node:node /usr/src/app/data
 
 USER node

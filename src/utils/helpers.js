@@ -1,15 +1,10 @@
-/**
- * Sanitizes user input to prevent basic XSS or injection
- * (A placeholder for more advanced sanitization logic if HTML input is expected)
- */
+/** Strips < and > from a string and trims it. Returns '' for non-strings. */
 const sanitizeString = (str) => {
   if (typeof str !== 'string') return '';
   return str.replace(/[<>]/g, '').trim();
 };
 
-/**
- * Calculates a simplified engagement category based on the numeric focus score
- */
+/** Maps a 0-100 focus score to highly_engaged (80+), moderately_engaged (50+) or distracted. */
 const getEngagementCategory = (score) => {
   if (score >= 80) return 'highly_engaged';
   if (score >= 50) return 'moderately_engaged';

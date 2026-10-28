@@ -24,8 +24,7 @@ const app = express();
 
 if (settings.trustProxy) app.set('trust proxy', settings.trustProxy);
 
-// All page scripts live in /js/*.js and Chart.js is served from /vendor, so no inline script and no third-party host
-// is needed: an injected <script> would not run (strong XSS mitigation) and no student/educator IP is sent to a CDN.
+// Scripts live in /js/*.js and Chart.js in /vendor: no inline script and no third-party host, so an injected <script> cannot run.
 app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: true,
@@ -46,12 +45,11 @@ app.use(cors({
 app.use(compression());
 app.use(express.json({ limit: '10kb' }));
 
-// Unauthenticated liveness probe for Docker/uptime checks. Reveals nothing.
+// Unauthenticated liveness probe for Docker and uptime checks.
 app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
-// Static files first: asset requests must not consume the API rate-limit budget.
-// Pages are always revalidated (a deploy is picked up immediately), the app's own scripts/styles are cached for
-// 5 minutes and the pinned vendor library (Chart.js) for a day, so repeat visits cost almost nothing.
+// Static files first, so asset requests do not use the API rate limit. Pages are revalidated on every load, app
+// scripts/styles are cached 5 minutes and the vendored Chart.js one day.
 app.use(express.static(settings.paths.publicDir, {
   setHeaders: (res, filePath) => {
     let policy = 'public, max-age=300';
@@ -88,20 +86,19 @@ const sessionMiddleware = session({
   }
 });
 
-// Cookie session for EDUCATORS only (web dashboard). Students have no account: a valid `Authorization: Bearer` token
-// from POST /api/extension/join (browser extension / optional student dashboard) bypasses the cookie session.
+// Cookie session for EDUCATORS only. Students have no account: a valid `Authorization: Bearer` token from
+// POST /api/extension/join bypasses it.
 app.use(sessionOrBearer(sessionMiddleware));
 
 app.use('/api/auth/educator', educatorAuthRoutes);
-// Retired student Google sign-in: answers 410 / redirects to /join.html instead of crashing on an unknown path.
+// Retired student Google sign-in: answers 410 / redirects to /join.html.
 app.use('/api/auth', googleAuthRoutes);
 app.use('/api/auth', authRoutes);
 // Educator-only download of the student extension with the server address and class code already filled in.
 app.use('/api/extension/preconfigured', bundleRoutes);
 app.use('/api/extension', extensionRoutes);
 app.use('/api/classes', classRoutes);
-// Un-prefixed aliases (/api/login, /api/me, /api/logout; /api/register now answers 410) used by the existing pages.
-// Also carries /api/student/* (passwordless lookup, consent, erasure).
+// Un-prefixed aliases used by the pages (/api/login, /api/me, /api/logout) plus the /api/student/* routes.
 app.use('/api', authRoutes);
 app.use('/api', consentRoutes);
 app.use('/api', rosterRoutes);
@@ -120,5 +117,5 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: status === 500 ? 'Internal server error' : err.message });
 });
 
-// Export app and sessionMiddleware so the server index can bind session to socket.io
+// Exported so src/index.js can bind the session to Socket.IO.
 module.exports = { app, sessionMiddleware };

@@ -52,9 +52,8 @@ router.post('/', requireEducator, validate(ClassCreateSchema), async (req, res) 
   }
 });
 
-// Students no longer sign in, so the session-based lookup/join/enroll steps are gone: one call does it all,
-// POST /api/extension/join { name, email, classCode, consent }. (Left in place, /join would let a student token enrol
-// the same student record in a second class, which would break the one-record-per-(email, class) rule.)
+// Students no longer sign in: one call does it all, POST /api/extension/join { name, email, classCode, consent }.
+// (A separate /join would let a student token enrol the same record in a second class, breaking one record per (email, class).)
 const JOIN_MOVED = 'Joining a class is now done with POST /api/extension/join { name, email, classCode, consent }.';
 router.post('/lookup', retired(JOIN_MOVED));
 router.post('/join', retired(JOIN_MOVED));
@@ -96,8 +95,7 @@ router.post('/leave', requireStudent, validate(z.object({ classId: z.string().uu
   }
 });
 
-// Class codes are permanent: a class keeps the classCode it was created with for its whole life (students and the
-// extension store it), and db.js refuses any write that would change it. The old rotate endpoint stays as a clear 410.
+// Class codes are permanent (students and the extension store them) and db.js refuses any change. The old rotate endpoint stays as a 410.
 router.post('/:classId/rotate-code', requireEducator, validate(ClassIdParamSchema, 'params'), (req, res) => {
   res.status(410).json({ error: 'Class codes are permanent and can no longer be rotated.' });
 });

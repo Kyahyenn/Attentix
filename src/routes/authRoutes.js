@@ -16,12 +16,11 @@ const DUMMY_HASH = bcrypt.hashSync('timing-equalizer-password', 10);
 
 const STUDENT_AUTH_GONE = 'Students no longer create accounts or sign in with a password. Join your class with its class code instead.';
 
-// Student sign-up is gone: students join a class passwordlessly (POST /api/extension/join). Educators register at
-// POST /api/auth/educator/register. Answered with 410 so old clients get a clear message rather than a crash.
+// Student sign-up is gone: students join with POST /api/extension/join, educators register at POST /api/auth/educator/register.
+// Answered with 410 so old clients get a clear message.
 router.post('/register', retired(STUDENT_AUTH_GONE));
 
-// Educator sign-in (the only password login left). A correct password on a leftover student record is told where to
-// go instead; every other failure is the same generic 401.
+// Educator sign-in (the only password login left). A correct password on a leftover student record is told where to go; every other failure is the same generic 401.
 router.post('/login', authLimiter, accountLimiter, validate(LoginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;

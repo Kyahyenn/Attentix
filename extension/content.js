@@ -1,15 +1,12 @@
 /* Attentix - content script for Google Meet and the Zoom web client.
  *
- * Runs in EVERY frame of the meeting page (the meeting UI can live in an iframe) and does three things:
- *   1. Collects attentiveness SIGNALS and reports them every few seconds: whether the page is visible/focused, how long
- *      since the last meaningful interaction, how steady the mouse/keyboard/scroll cadence was over the last minute
- *      (counts of 3-second buckets, nothing else), whether the user is scrolling/reading, and whether a video or audio
- *      is playing. Never which key, never what was typed, never anything from the page.
- *   2. Reports that the user SENT a message in the meeting chat. It never reads, stores or sends the text of any
- *      chat message (yours or anyone else's, including private ones) - it only notices "Enter / Send was pressed
- *      in a chat box that was not empty".
- *   3. In the top frame only: shows a small always-visible badge while monitoring is on, and shows questions the
- *      educator sends from the dashboard, with a box to answer them.
+ * Runs in EVERY frame of the meeting page and does three things:
+ *   1. Collects attentiveness SIGNALS and reports them every few seconds: page visible/focused, time since the last
+ *      interaction, how steady mouse/keyboard/scroll activity was over the last minute (counts per 3-second bucket,
+ *      nothing else), scrolling/reading, and whether audio or video is playing. Never which key, never what was typed.
+ *   2. Reports that the user SENT a chat message. It never reads, stores or sends chat text; it only notices "Enter / Send
+ *      pressed in a chat box that was not empty".
+ *   3. Top frame only: shows an always-visible "monitoring is on" badge and any question the educator sends, with an answer box.
  */
 (() => {
   if (window.__attentionMonitorLoaded) return;   // manifest injection + on-demand injection must not double up
@@ -45,7 +42,7 @@
   const pathOf = (event) => (typeof event.composedPath === 'function' ? event.composedPath() : [event.target]);
   const isOurUi = (event) => pathOf(event).some((n) => n === badge || n === promptHost);
 
-  // ---- 1. attentiveness signals -----------------------------------------------------------------------------
+  // ---- 1. attentiveness signals ----
   // Privacy by construction: the handlers below never read event.key, event.code, event.target.value, coordinates or
   // any page text. Keyboard activity is only "a key went down at time T", folded into 3-second activity buckets.
   const BUCKET_MS = 3000;
@@ -145,7 +142,7 @@
   signalTimer = setInterval(report, REPORT_MS);
   report();
 
-  // ---- 2. "the user sent a chat message" (no text is read) ---------------------------------------------------
+  // ---- 2. "the user sent a chat message" (no text is read) ----
   const CHAT_HINT = /chat|message/i;
 
   const isEditable = (el) => {
@@ -202,7 +199,7 @@
 
   if (!isTop) return; // everything below is UI, which only the top frame shows
 
-  // ---- 3a. "monitoring is on" badge -------------------------------------------------------------------------
+  // ---- 3a. "monitoring is on" badge ----
   function ensureBadge() {
     if (badge && badge.isConnected) return;
     badge = document.createElement('div');
@@ -240,7 +237,7 @@
       : 'Attentix reconnecting...';
   }
 
-  // ---- 3b. educator question + answer box -------------------------------------------------------------------
+  // ---- 3b. educator question + answer box ----
   function showPrompt(text) {
     if (promptHost) promptHost.remove();
     promptHost = document.createElement('div');

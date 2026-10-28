@@ -18,7 +18,7 @@ const http = require('http');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
-// ---- where things live ------------------------------------------------------------------------------------------
+// ---- where things live ----
 
 const isSea = () => {
   try { return require('node:sea').isSea(); } catch { return false; }
@@ -50,7 +50,7 @@ const resolvePaths = ({ packaged = isPackaged(), execPath = process.execPath, cw
 /** DATA_DIR from the environment (relative = next to the executable / working directory) or the default data/ folder. */
 const resolveDataDir = (paths = resolvePaths(), env = process.env) => (env.DATA_DIR ? path.resolve(paths.baseDir, env.DATA_DIR) : paths.dataDir);
 
-// ---- .env generation ----------------------------------------------------------------------------------------------
+// ---- .env generation ----
 
 const PLACEHOLDER = /^(replace[_-]?with|change[_-]?me|your[_-]|example|fallback_)/i;
 const newSecret = () => crypto.randomBytes(32).toString('hex');
@@ -165,7 +165,7 @@ const ensureEnv = async ({ paths = resolvePaths(), env = process.env, isFree = i
   return result;
 };
 
-// ---- network addresses ----------------------------------------------------------------------------------------------
+// ---- network addresses ----
 
 const VIRTUAL_NAME = /virtual|vbox|vmware|vmnet|hyper-v|vethernet|docker|wsl|bluetooth|loopback|tailscale|zerotier|utun|\bveth|\bbr-|virbr/i;
 
@@ -241,7 +241,7 @@ const applyHostedDefaults = (env = process.env) => {
   return filled;
 };
 
-// ---- opening the browser ----------------------------------------------------------------------------------------------
+// ---- opening the browser ----
 
 // Only our own http(s) pages on a plain host:port are ever opened, which is also what makes the Windows `start` command
 // below safe: nothing in such a URL can be interpreted by cmd.exe (no quotes, &, ^, %, spaces).
@@ -293,7 +293,7 @@ const hasEducatorOnDisk = (dataDir) => {
   } catch { return false; }
 };
 
-// ---- one server per data directory -------------------------------------------------------------------------------------
+// ---- one server per data directory ----
 
 const pidAlive = (pid) => {
   try { process.kill(pid, 0); return true; } catch (err) { return err.code === 'EPERM'; }

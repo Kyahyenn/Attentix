@@ -25,7 +25,7 @@
 
   window.AMPrivacy = { lookup, setConsent, describeConsent };
 
-  // ---- the privacy.html page -----------------------------------------------------------------------------------
+  // ---- the privacy.html page ----
   if (!byId('decisionCard')) return;
 
   const params = new URLSearchParams(window.location.search);

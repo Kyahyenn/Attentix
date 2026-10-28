@@ -12,15 +12,13 @@ const DIR_MODE = 0o700;
 
 const filePathFor = (collection) => path.join(settings.dataDir, `${collection}.json`);
 
-// ---- in-memory cache ---------------------------------------------------------------------------------------
-// Each collection is loaded from disk once, served from memory, and persisted write-through on every change, so a
-// request never re-reads or re-parses a JSON file.
-// Contract: arrays returned by readData()/findById() are immutable snapshots. mutate() works on a private copy and
-// swaps it in only after the file was written, so a failed write can never leave memory ahead of disk.
-// This assumes ONE server process owns the data directory (already true for flat-file storage).
+// ---- in-memory cache ----
+// Each collection loads from disk once, is served from memory and is saved on every change. readData()/findById()
+// return immutable snapshots. mutate() edits a private copy and swaps it in only after the write succeeds, so memory
+// never gets ahead of disk. Assumes ONE server process owns the data.
 const cache = new Map();
 
-// null = JSON files in settings.dataDir (default); otherwise a remote store such as Firestore (see firestoreStore.js).
+// null = JSON files in settings.dataDir; otherwise a remote store (see firestoreStore.js).
 let remote = null;
 
 const initDb = async () => {
@@ -90,10 +88,9 @@ const writeFileAtomic = async (collection, data, previous) => {
   await fs.rename(tmp, target);
 };
 
-// ---- write invariants ----------------------------------------------------------------------------------------
-// A class's `id` and `classCode` are permanent: students bookmark join links and extensions store the code, so
-// nothing may ever change them after creation. Enforced HERE (not only in the routes) so no future code path can
-// rotate a code by accident. A class that had no code yet (created before join codes existed) may be given one once.
+// ---- write invariants ----
+// A class's `id` and `classCode` are permanent (students bookmark links, extensions store the code). Enforced here, not
+// only in the routes, so no code path can change them. A class created before codes existed may be given one once.
 const invariantError = (message, status = 409) => {
   const err = new Error(message);
   err.status = status;

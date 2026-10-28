@@ -43,7 +43,7 @@
     return 'away';
   };
 
-  // ---- Attentiveness score (0-100) -------------------------------------------------------------------------
+  // ---- Attentiveness score (0-100) ----
   //
   //   score = 100 * ( W_FOCUS * focus  +  W_INTERACTION * interaction )  -  switchPenalty
   //
@@ -78,7 +78,7 @@
   const RAPID_PENALTY = 15;
   const PENALTY_CAP = 40;
 
-  // ---- State thresholds ------------------------------------------------------------------------------------
+  // ---- State thresholds ----
   const ACTIVE_SECONDS = 30;            // interacted within this long ago = actively engaged
   const IDLE_AFTER_SECONDS = 300;       // this long with no interaction AND nothing playing/scrolling = Idle
   const DISTRACTED_BELOW = 40;
@@ -146,7 +146,7 @@
     };
   };
 
-  // ---- Merging what the content scripts (one per frame) reported ---------------------------------------------
+  // ---- Merging what the content scripts (one per frame) reported ----
   // frames: [{ receivedAt, idleMs, media, scrolling, buckets, visible }] for the ACTIVE class tab. A frame that stopped
   // reporting (closed, navigated, throttled) is ignored after STALE_MS; idle time keeps growing between reports.
   const STALE_MS = 8000;
@@ -168,7 +168,7 @@
     };
   };
 
-  // ---- Tab-switch counting ---------------------------------------------------------------------------------
+  // ---- Tab-switch counting ----
   // A tab switch is: the student was in class (meeting/tool) and then stayed "away" for AWAY_TICKS_TO_COUNT samples
   // in a row (>= ~2 s, so a flicker through another tab does not count). One switch is counted per trip away; the
   // student has to come back to the meeting or the tool before another one can be counted.

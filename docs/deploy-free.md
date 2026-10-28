@@ -1,35 +1,57 @@
-# Run Attentix on the internet for free (no installs)
+# Run Attentix on the internet for free
 
-Teacher and students can be on **different networks**. Everything is done in a web browser: nothing to install on your computer.
+Teacher and students can be on **different networks**. Everything is done in a web browser. Nothing is installed on your
+computer. Total time: about 15 minutes.
 
 | Piece | Free service | What it does |
 | --- | --- | --- |
 | Code | GitHub | Holds your copy of the project |
-| Server | Render (free web service) | Runs Attentix 24/7 at an `https://...onrender.com` address |
-| Storage | Firebase Firestore (Spark plan, no card) | Keeps accounts and classes, because Render's free disk is wiped on restart |
+| Server | Render (free web service) | Runs Attentix at an `https://...onrender.com` address |
+| Storage | Firebase Firestore (Spark plan, no card) | Keeps accounts and classes (Render's free disk is wiped on restart) |
 
-> Firebase alone can't run Attentix: its free plan hosts only static pages, and Attentix needs a live server (Socket.IO). So Firebase is used for storage and Render for the server.
+> Firebase alone cannot run Attentix: its free plan only hosts static pages, and Attentix needs a live server. So
+> Firebase stores the data and Render runs the server.
 
-## 1. Put the project on GitHub (about 3 minutes)
-1. Sign up at github.com, then **New repository** (name it `attentix`, Public or Private).
-2. Unzip `attentix.zip` on your computer. In the repo press **Add file -> Upload files** and drag in everything **except** the `tests/` and `node_modules/` folders (they are not needed). GitHub accepts about 100 files per upload, so do it in two batches if asked, pressing **Commit changes** after each.
+## 1. Put the project on GitHub
 
-## 2. Create the free database (Firebase, about 3 minutes)
-1. console.firebase.google.com -> **Add project** (turn Google Analytics off).
-2. Left menu **Build -> Firestore Database -> Create database**. Pick a region near you (e.g. Singapore), **Production mode**.
-3. **Project settings (gear) -> Service accounts -> Generate new private key**. A `.json` file downloads. Open it in any text editor, select all, copy. (This one file is the only download. Don't share it or put it on GitHub.)
+1. Sign up at [github.com](https://github.com) and press **New repository**. Name it `attentix` (Public or Private).
+2. Unzip the Attentix zip on your computer.
+3. In the new repository press **Add file**, then **Upload files**, and drag in everything **except** `tests/` and
+   `node_modules/`.
+4. Press **Commit changes**. If GitHub limits the upload to about 100 files, upload in two batches and commit after each.
 
-## 3. Deploy on Render (about 5 minutes)
-1. Sign up at render.com with your GitHub account.
-2. **New -> Blueprint**, choose your `attentix` repo, press **Apply**. (It reads `render.yaml`.)
-3. When asked for `FIREBASE_SERVICE_ACCOUNT`, paste the whole JSON you copied. Deploy.
-4. When the log says "Storage: Firestore" and the service is **Live**, open the `https://attentix-xxxx.onrender.com` address. Create your teacher account, create a class, and press **Download Pre-Configured Student Extension**. It already contains your internet address and class code.
+## 2. Create the database (Firebase)
+
+1. Open [console.firebase.google.com](https://console.firebase.google.com) and press **Add project**. Turn Google
+   Analytics off.
+2. In the left menu choose **Build**, then **Firestore Database**, then **Create database**. Pick a region near you and
+   choose **Production mode**.
+3. Press the gear icon, then **Project settings**, then **Service accounts**, then **Generate new private key**. A
+   `.json` file downloads.
+4. Open that file in a text editor, select all and copy.
+
+> Never share this file or put it on GitHub. It gives full access to your database.
+
+## 3. Deploy on Render
+
+1. Sign up at [render.com](https://render.com) with your GitHub account.
+2. Press **New**, then **Blueprint**, choose your `attentix` repository and press **Apply**. (It reads `render.yaml`.)
+3. When asked for `FIREBASE_SERVICE_ACCOUNT`, paste the whole JSON you copied, then deploy.
+4. Wait until the log says `Storage: Firestore` and the service shows **Live**.
+5. Open your `https://attentix-xxxx.onrender.com` address, create your teacher account and a class, then press
+   **Download Pre-Configured Student Extension**. It already contains your internet address and class code.
 
 ## 4. Students
-They need the Chrome extension (the only thing that can read their meeting tab): unzip, `chrome://extensions` -> Developer mode -> Load unpacked. They can be on any network.
+
+Send students the downloaded zip. They install it as described in the [extension guide](../extension/README.md). They can
+be on any network.
 
 ## Good to know
-* **Sleeping:** Render's free service sleeps after 15 minutes with no traffic and takes up to about a minute to wake. Active extensions keep it awake during class. To avoid a slow first load, open the site a minute before class, or add a free uptime pinger (e.g. UptimeRobot) on `https://YOUR-URL/healthz`.
-* **After a sleep or restart** teachers sign in again (logins live in memory). Accounts, classes and consents stay in Firestore. Live scores restart empty.
-* **Free limits:** Render gives 750 free hours/month (enough for one always-on service). Firestore Spark gives 50k reads / 20k writes per day, plenty here.
-* Anyone with your link can create a teacher account (see the security notes in `self-hosting.md`).
+
+* **Sleeping:** the free server sleeps after 15 minutes without traffic and takes up to a minute to wake. Open the site
+  a minute before class, or set a free uptime pinger (such as UptimeRobot) on `https://YOUR-URL/healthz`.
+* **After a sleep or restart:** teachers must sign in again. Accounts, classes and consent records stay in Firestore.
+  Live scores start empty.
+* **Free limits:** Render gives 750 free hours a month (enough for one always-on service). Firestore Spark allows 50,000
+  reads and 20,000 writes a day, which is plenty here.
+* **Security:** anyone with your link can create a teacher account. See [Security notes](self-hosting.md#6-security-notes).

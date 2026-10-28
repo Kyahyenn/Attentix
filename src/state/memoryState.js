@@ -20,8 +20,7 @@ class MemoryState {
   }
 
   removeConnection(socketId) {
-    // The metric is intentionally kept for a while so brief network blips don't erase a student;
-    // cleanupStaleConnections() prunes it once it has been silent for settings.metricRetentionMs.
+    // Kept for a while so brief network blips do not erase a student; pruned by cleanupStaleConnections().
     this.connections.delete(socketId);
   }
 
@@ -91,9 +90,8 @@ class MemoryState {
   }
 
   /**
-   * @param {(socketId: string) => boolean} [isSocketAlive] When provided, liveness is decided by socket.io itself, so a
-   * connected-but-idle student is never dropped (a dropped entry would make every later update from that socket be
-   * ignored). Without it, a connection with no activity for `staleTimeoutMs` is considered dead.
+   * @param {(socketId: string) => boolean} [isSocketAlive] When given, socket.io decides liveness, so a connected-but-idle
+   * student is never dropped. Without it, a connection silent for `staleTimeoutMs` counts as dead.
    */
   cleanupStaleConnections(isSocketAlive) {
     const now = Date.now();

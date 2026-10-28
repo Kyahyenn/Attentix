@@ -20,7 +20,7 @@
   const role = root.dataset.role === 'student' ? 'student' : 'educator';
   const { prefs, toast, confirmDialog, session } = AM;
 
-  // ---- small helpers ------------------------------------------------------------------------------------------------
+  // ---- small helpers ----
   const el = (tag, props = {}, text) => {
     const node = document.createElement(tag);
     Object.assign(node, props);
@@ -46,7 +46,7 @@
     toast(message, isError);
   }
 
-  // ---- building blocks ----------------------------------------------------------------------------------------------
+  // ---- building blocks ----
   function section(id, title, intro) {
     const wrap = el('section', { className: 'card settings-section', id });
     const heading = el('h2', { id: `${id}-title`, tabIndex: -1 }, title);
@@ -157,9 +157,7 @@
     return wrap;
   }
 
-  // ======================================================================================================================
-  // Appearance
-  // ======================================================================================================================
+  // ---- Appearance ----
   function buildAppearance() {
     const box = section('settings-appearance', 'Appearance', 'How Attentix looks on this device. Changes apply straight away and are remembered here.');
 
@@ -191,9 +189,7 @@
     return box;
   }
 
-  // ======================================================================================================================
-  // Accessibility
-  // ======================================================================================================================
+  // ---- Accessibility ----
   function buildTextSize() {
     const id = uid('range');
     const range = el('input', { type: 'range', id, min: String(A11y.MIN), max: String(A11y.MAX), step: String(A11y.STEP), className: 'range' });
@@ -292,9 +288,7 @@
     return box;
   }
 
-  // ======================================================================================================================
-  // General: notifications
-  // ======================================================================================================================
+  // ---- General: notifications ----
   const desktopSupported = () => Boolean(window.isSecureContext && 'Notification' in window);
 
   async function chooseDesktopAlerts(on) {
@@ -343,9 +337,7 @@
     return box;
   }
 
-  // ======================================================================================================================
-  // General: application preferences
-  // ======================================================================================================================
+  // ---- General: application preferences ----
   const VIEW_KEY = 'am.classes.view';
   const SORT_KEY = 'am.classes.sort';
 
@@ -384,9 +376,7 @@
     return box;
   }
 
-  // ======================================================================================================================
-  // General: data management (this browser only)
-  // ======================================================================================================================
+  // ---- General: data management (this browser only) ----
   const SIMPLE_VALUES = {
     'am.theme': (v) => v === 'light' || v === 'dark',
     'am.textScale': (v) => /^\d{2,3}$/.test(v) && Number(v) >= A11y.MIN && Number(v) <= A11y.MAX,
@@ -529,9 +519,7 @@
     return box;
   }
 
-  // ======================================================================================================================
-  // Keyboard shortcuts (opt-in)
-  // ======================================================================================================================
+  // ---- Keyboard shortcuts (opt-in) ----
   let awaitingSecondKey = false;
   let sequenceTimer = null;
   const typingTarget = (target) => Boolean(target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)));

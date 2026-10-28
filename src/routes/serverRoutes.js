@@ -14,9 +14,8 @@ const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 
 /**
  * "Is the professor sitting at the computer that runs this server?" Educator sign-up is open, so being an educator is not
- * enough to be allowed to stop a shared server. The request must come over the loopback interface, carry no proxy
- * headers (a reverse proxy on the same machine would otherwise make every visitor look local) and use a localhost Host
- * header (which also defeats DNS-rebinding).
+ * enough to stop a shared server. The request must come over loopback, carry no proxy headers (a local reverse proxy
+ * would otherwise make every visitor look local) and use a localhost Host header (which also defeats DNS rebinding).
  */
 const isLocalRequest = (req) => {
   const remote = req.socket && req.socket.remoteAddress;
@@ -37,8 +36,8 @@ router.get('/server-info', requireEducator, (req, res) => {
 });
 
 // POST /api/server/shutdown: the "Shut Down Server" button, for a professor running without a terminal window.
-// Only the launcher (src/index.js) installs `app.locals.requestShutdown`; under `npm test` nothing does, so a test run
-// can never stop anything.
+// POST /api/server/shutdown: the "Shut Down Server" button. Only the launcher (src/index.js) installs `app.locals.requestShutdown`,
+// so a test run can never stop anything.
 router.post('/server/shutdown', requireEducator, (req, res) => {
   if (typeof req.app.locals.requestShutdown !== 'function') {
     return res.status(503).json({ error: 'Shutdown is only available when the server was started with the launcher.' });
@@ -50,9 +49,8 @@ router.post('/server/shutdown', requireEducator, (req, res) => {
   return res.json({ ok: true, message: 'Shutting down. You can close this tab.' });
 });
 
-// POST /api/server/sign-out: the dashboard's "Log out". Signs the educator out and, when they are sitting at the computer
-// that runs the app, also stops the server (the launcher installs requestShutdown; Docker, proxies and tests never do).
-// From any other computer it is an ordinary sign-out and the server keeps running for everybody else.
+// POST /api/server/sign-out: "Log out". Also stops the server when the educator is at the computer that runs it (the launcher
+// installs requestShutdown; Docker, proxies and tests never do). From any other computer it is an ordinary sign-out.
 router.post('/server/sign-out', requireEducator, (req, res) => {
   const sessionId = req.sessionID;
   const realtime = realtimeOf(req);

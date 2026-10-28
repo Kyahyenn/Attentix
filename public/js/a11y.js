@@ -41,7 +41,7 @@
   const contrastQuery = media('(prefers-contrast: more)');
   const motionQuery = media('(prefers-reduced-motion: reduce)');
 
-  // ---- resolved values -------------------------------------------------------------------------------------------
+  // ---- resolved values ----
   const systemTheme = () => (systemQuery && systemQuery.matches ? 'dark' : 'light');
   const savedTheme = () => { const t = store.get(THEME_KEY); return t === 'light' || t === 'dark' ? t : null; };
   const theme = () => savedTheme() || systemTheme();
@@ -70,7 +70,7 @@
   const announce = (name, detail) => document.dispatchEvent(new window.CustomEvent(name, { detail }));
   const changed = () => announce('am:a11ychange', snapshot()); // one event for "anything here changed" (the Settings page listens)
 
-  // ---- applying --------------------------------------------------------------------------------------------------
+  // ---- applying ----
   function applyTheme() {
     root.setAttribute('data-theme', theme()); // always explicit, so the stylesheet has a single dark palette
     announce('am:themechange', { theme: theme(), saved: Boolean(savedTheme()) });
@@ -101,7 +101,7 @@
     syncUi();
   }
 
-  // ---- setters ---------------------------------------------------------------------------------------------------
+  // ---- setters ----
   function setTheme(next) {
     if (next === 'light' || next === 'dark') store.set(THEME_KEY, next); else store.remove(THEME_KEY);
     applyTheme();
@@ -149,7 +149,7 @@
     applyBehaviour();
   }
 
-  // ---- toolbar (pages without the Settings page) -------------------------------------------------------------------
+  // ---- toolbar (pages without the Settings page) ----
   const ui = {};
 
   function button(label, className, onClick, ariaLabel) {

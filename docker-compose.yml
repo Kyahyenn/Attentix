@@ -4,18 +4,17 @@ services:
     container_name: attention_monitor_app
     restart: unless-stopped
     ports:
-      # Students need to reach this over the network. For real use put an HTTPS reverse proxy (Caddy, nginx, Traefik)
-      # in front, bind to "127.0.0.1:3000:3000" instead and set COOKIE_SECURE=true and TRUST_PROXY=1 in .env.
+      # For real use, put an HTTPS reverse proxy (Caddy, nginx, Traefik) in front, bind to "127.0.0.1:3000:3000" instead
+      # and set COOKIE_SECURE=true and TRUST_PROXY=1 in .env. See docs/self-hosting.md.
       - "3000:3000"
     volumes:
-      # Persist flat-file JSON databases outside the container.
-      # The container runs as user "node" (uid 1000): `sudo chown -R 1000:1000 ./data` if it cannot write here.
+      # Keeps the data files outside the container. If it cannot write here (runs as uid 1000): sudo chown -R 1000:1000 ./data
       - ./data:/usr/src/app/data
     env_file:
       - .env
     environment:
       - NODE_ENV=production
-    # Hardening: a compromised process cannot gain privileges, write to the image or use Linux capabilities.
+    # Hardening: no new privileges, read-only filesystem, no Linux capabilities.
     read_only: true
     tmpfs:
       - /tmp

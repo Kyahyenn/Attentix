@@ -12,8 +12,7 @@ const realtimeOf = require('../utils/realtime');
 
 const router = express.Router();
 
-// Students have no password, so a body that carries one is a client bug (or someone probing): say so instead of
-// silently ignoring it.
+// Students have no password, so a body carrying one is a client bug or probing: say so instead of ignoring it.
 const rejectPasswords = (req, res, next) => {
   const body = req.body;
   if (body && typeof body === 'object' && Object.keys(body).some((k) => /pass(word|code|wd)?$/i.test(k))) {
@@ -24,9 +23,8 @@ const rejectPasswords = (req, res, next) => {
 
 // POST /api/extension/join  { name, email, classCode, consent: true }
 //   -> { token, expiresAt, studentId, classId, classCode, className, educatorName, student, class, user }
-// The whole onboarding in one call, no account and no password: validate, find the class, create-or-update the student
-// (keyed by email + class, so a returning student keeps their studentId and history and only the display name can
-// change), enrol them, record the privacy consent and hand back a signed bearer token for the extension.
+// The whole onboarding in one call, no account or password: validate, find the class, create-or-update the student (keyed
+// by email + class, so a returning student keeps their studentId and history), enrol them, record consent, return a signed token.
 router.post('/join', joinLimiter, rejectPasswords, validate(StudentJoinSchema), async (req, res) => {
   try {
     const { name, email, classCode } = req.body;
@@ -62,9 +60,8 @@ router.post('/join', joinLimiter, rejectPasswords, validate(StudentJoinSchema), 
 
 // POST /api/extension/heartbeat  (Bearer token)  { beats: [ { score, state, location?, isFocused, idleSeconds?, ageMs? } x1-5 ] }
 //   -> { ok, accepted, status }   `status` is the row the student sees about themself.
-// REST twin of the `attention:heartbeat` socket event. The extension uses it when the WebSocket is blocked or down, and
-// still delivers the (up to 5) beats it buffered. Telemetry only: educator questions need the socket.
-// Uses its own limiter (see middleware/limiter.js), not the global one.
+// REST twin of the `attention:heartbeat` socket event, used when the WebSocket is blocked or down; delivers up to 5 buffered beats.
+// Telemetry only (educator questions need the socket). Has its own limiter (middleware/limiter.js).
 router.post('/heartbeat', requireStudent, heartbeatLimiter, async (req, res) => {
   try {
     const result = await realtimeOf(req).ingestHeartbeat(req.session.user, req.body);
@@ -79,9 +76,8 @@ router.post('/heartbeat', requireStudent, heartbeatLimiter, async (req, res) => 
 // The old password login. 410 so an extension build that still calls it learns to use /join.
 router.post('/login', retired('The extension no longer uses passwords. Join with your name, email and class code.'));
 
-// POST /api/extension/logout  (Bearer token) - revokes EVERY extension token issued to this student so far and
-// disconnects the extension's live sockets. A stolen or forgotten token can no longer be used after this.
-// (Joining again with the same email and class code issues a fresh token; the studentId and history are unchanged.)
+// POST /api/extension/logout (Bearer token) - revokes EVERY extension token issued to this student and disconnects their live
+// sockets. Joining again with the same email and class code issues a fresh token; studentId and history are unchanged.
 router.post('/logout', requireStudent, async (req, res) => {
   try {
     const userId = req.session.user.id;

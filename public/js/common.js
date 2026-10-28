@@ -14,7 +14,7 @@
   // Skips the write when nothing changed, so a live table does not restart screen-reader announcements or selections.
   const setIfChanged = (node, text) => { if (node && node.textContent !== text) node.textContent = text; };
 
-  // ---- student token store ------------------------------------------------------------------------------------
+  // ---- student token store ----
   const TOKEN_KEY = 'am.token';              // sessionStorage: the token itself (name kept from the previous release)
   const PERSIST_KEY = 'am.token.persist';    // localStorage: { token, expiresAt } only when "remember me" was ticked
   const TOKEN_SHAPE = /^[A-Za-z0-9_-]{10,1000}\.[A-Za-z0-9_-]{10,200}$/;
@@ -115,7 +115,7 @@
     });
   }
 
-  // ---- app preferences (Settings page) -------------------------------------------------------------------------------
+  // ---- app preferences (Settings page) ----
   // Plain values (booleans, short strings) under am.pref.<name>, kept only in this browser. Display and accessibility
   // choices live in js/a11y.js instead, because they must be applied before the page paints.
   const PREF_PREFIX = 'am.pref.';
@@ -167,7 +167,7 @@
     window.AM.navigate(user && user.role === 'educator' ? '/educator-dashboard.html' : '/student.html');
   }
 
-  // ---- class code (deep links: /join?classCode=ABC234) -----------------------------------------------------------
+  // ---- class code (deep links: /join?classCode=ABC234) ----
   // Only used to PRE-FILL the join form. The 30 minute sessionStorage cache survives a detour through the privacy
   // notice and is cleared as soon as it is used. Nothing is stored on the server.
   const INVITE_KEY = 'am.pendingInvite';
@@ -201,7 +201,7 @@
     clear() { try { INVITE_STORE.removeItem(INVITE_KEY); } catch { /* ignore */ } }
   };
 
-  // ---- forms: inline, accessible validation -----------------------------------------------------------------------
+  // ---- forms: inline, accessible validation ----
   // Markup contract: <input id="x" aria-describedby="xError"> + <p id="xError" class="field-error" hidden></p>.
   // Errors are attached to the field (aria-invalid + describedby) instead of only being shown in a banner.
   const validators = {
@@ -245,7 +245,7 @@
     return match && knownFields.includes(match[1]) ? { field: match[1], text: match[2] } : { field: null, text: String(message || '') };
   }
 
-  // ---- clipboard ------------------------------------------------------------------------------------------------
+  // ---- clipboard ----
   // Resolves true when the text was copied. The Clipboard API is unavailable on non-HTTPS origins (a classroom server
   // on http://192.168.x.x), so fall back to a selected off-screen textarea without blocking the page.
   async function copyText(text) {
@@ -262,12 +262,11 @@
     return copied;
   }
 
-  // ---- engagement helpers (educator roster + student dashboard share one definition of "state") --------------------
+  // ---- engagement helpers (educator roster + student dashboard share one definition of "state") ----
   // A row is what the server's `class:update` / `/api/student/lookup` carry (see src/state/engagementState.js).
-  // Four display states. The extension reports Focused / Passive / Distracted / Idle; "Idle" has no cell of its own and
-  // is shown as Passive. "Focused" additionally needs the server to have raised no flag: if the client says Focused
-  // but the server sees the meeting tab out of focus, an unanswered question, etc., the row is Passive. A student who
-  // has only ever used the old web page protocol (no attentionState) is derived from the server's own flags.
+  // Four display states. The extension reports Focused / Passive / Distracted / Idle; Idle is shown as Passive. "Focused" also
+  // needs the server to have raised no flag (meeting tab out of focus, unanswered question...), else the row is Passive. A student
+  // who only uses the old web protocol (no attentionState) is derived from the server's own flags.
   const STATES = ['Focused', 'Passive', 'Distracted', 'Offline'];
   const STATE_SLUG = { Focused: 'focused', Passive: 'passive', Distracted: 'distracted', Offline: 'offline' };
   const CHECK_IN_THRESHOLD = 60; // same cut-off as the server (EXTENSION_ATTENTIVE_MIN)
@@ -369,7 +368,7 @@
 
   const engagement = { STATES, STATE_SLUG, SORTS, SCORE_BUCKETS, CHECK_IN_THRESHOLD, TAB_SWITCH_LIMIT, scoreOf, stateOf, needsCheckIn, isIdle, isUnanswered, classStats, filterRoster, sortRoster };
 
-  // ---- dialogs ----------------------------------------------------------------------------------------------------
+  // ---- dialogs ----
   // Native <dialog> gives a real focus trap, Escape-to-close and screen-reader semantics for free.
   // Resolves with the entered password, or null when cancelled.
   function askPassword({ title, message, confirmLabel, label = 'Your password', type = 'password', autocomplete = 'current-password' }) {
@@ -426,7 +425,7 @@
     });
   }
 
-  // ---- educator sign-out / account deletion (cookie session) ------------------------------------------------------
+  // ---- educator sign-out / account deletion (cookie session) ----
   async function logout() {
     invite.clear(); // a cached class code must not be inherited by whoever uses this tab next
     try { await api('/api/logout', 'POST', undefined, { bearer: false }); } catch { /* the session may already be gone */ }

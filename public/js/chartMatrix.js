@@ -16,7 +16,7 @@
   const FALLBACK_COLORS = ['#1a5cff', '#c2410c', '#0f766e', '#7c3aed'];
   const ANIMATION_MS = 350;
 
-  // ---- theme ----------------------------------------------------------------------------------------------
+  // ---- theme ----
   // Canvas drawing cannot read CSS variables, so resolve the tokens to concrete colours at build time.
   function themeContext(palette) {
     const css = getComputedStyle(document.documentElement);
@@ -34,7 +34,7 @@
     };
   }
 
-  // ---- the matrix: type -> (dataset, theme, label) => Chart.js config ----------------------------------------
+  // ---- the matrix: type -> (dataset, theme, label) => Chart.js config ----
   const cartesianScales = (t, opts = {}) => ({
     x: { grid: { display: false }, ticks: { color: t.muted } },
     y: { beginAtZero: true, grace: '10%', ...(opts.yMax !== undefined ? { max: opts.yMax, grace: 0 } : {}), ticks: { precision: 0, color: t.muted }, grid: { color: t.grid } }
@@ -90,7 +90,7 @@
     }
   };
 
-  // ---- storage / helpers ---------------------------------------------------------------------------------
+  // ---- storage / helpers ----
   const readType = (key, fallback) => {
     try { const saved = window.localStorage.getItem(key); return TYPE_IDS.includes(saved) ? saved : fallback; } catch { return fallback; }
   };

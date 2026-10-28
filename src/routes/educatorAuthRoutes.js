@@ -4,9 +4,8 @@ const { educatorSignupLimiter } = require('../middleware/limiter');
 const { registerEducator } = require('../utils/accounts');
 const { toSessionUser, establishSession } = require('../utils/session');
 
-// Educator onboarding, mounted at /api/auth/educator. Self-hosted: the professor running the server registers with
-// just a name, an email and a password. There is no invite code. This is the ONLY route that can create an educator,
-// and an educator only ever sees the classes they created themselves.
+// Educator onboarding, mounted at /api/auth/educator. The professor running the server registers with a name, email and
+// password. This is the ONLY route that creates an educator, and an educator only sees their own classes.
 const router = express.Router();
 
 router.post('/register', educatorSignupLimiter, validate(EducatorRegisterSchema), async (req, res) => {

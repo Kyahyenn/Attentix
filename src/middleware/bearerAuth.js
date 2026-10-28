@@ -1,8 +1,7 @@
 const db = require('../config/db');
 const { verifyTokenClaims } = require('../utils/extensionToken');
 
-// The session user for a passwordless student. `classId` is part of the identity: one student record exists per
-// (email, class), so the same person in two classes holds two separate tokens.
+// The session user for a passwordless student. `classId` is part of the identity: one record per (email, class).
 const studentSessionUser = (user, klass) => ({
   id: user.id,
   username: user.email,
@@ -15,7 +14,7 @@ const studentSessionUser = (user, klass) => ({
 });
 
 // Resolves `Authorization: Bearer <token>` to a student, or null. Everything is re-checked against the database, so a
-// token for a deleted student or a deleted class stops working at once, whatever its claims say.
+// token for a deleted student or class stops working at once.
 const userFromToken = async (token) => {
   const claims = verifyTokenClaims(token);
   // Tokens from the retired password login carry no class: they must not outlive the switch to passwordless joining.
@@ -34,10 +33,8 @@ const bearerFromHeader = (req) => {
   return header.startsWith('Bearer ') ? header.slice(7).trim() : null;
 };
 
-// Wraps the cookie-session middleware. A valid bearer token gets a throwaway in-memory
-// `req.session = { user }` (express-session skips itself when req.session already exists),
-// so every existing route and requireAuth/requireStudent keeps working and no cookie is set.
-// No bearer header -> normal cookie session, exactly as before (educators).
+// Wraps the cookie-session middleware. A valid bearer token gets an in-memory `req.session = { user }` (no cookie), so
+// existing routes work unchanged. Without one, the normal cookie session applies (educators).
 const sessionOrBearer = (sessionMiddleware) => async (req, res, next) => {
   const token = bearerFromHeader(req);
   if (!token) return sessionMiddleware(req, res, next);

@@ -20,8 +20,7 @@ if (nodeEnv === 'production') {
   }
 }
 
-// Optional second secret just for the extension's bearer tokens, so rotating the session secret does not sign every
-// student out. Unset (or still the template placeholder) = tokens are keyed from SESSION_SECRET as before.
+// Optional second secret for extension tokens, so rotating SESSION_SECRET does not sign students out. Defaults to SESSION_SECRET.
 const rawTokenSecret = process.env.EXTENSION_TOKEN_SECRET;
 const extensionTokenSecret = rawTokenSecret && !/^(replace[_-]?with|change[_-]?me|your[_-]|example)/i.test(rawTokenSecret) ? rawTokenSecret : null;
 if (nodeEnv === 'production' && extensionTokenSecret && extensionTokenSecret.length < 32) {
@@ -43,12 +42,11 @@ module.exports = {
   allowedOrigins,
   wsOrigins: allowedOrigins.map(toWsOrigin),
   extensionTokenSecret,
-  // Service-account JSON (or its base64) for Firestore. Set = accounts and classes are stored there instead of data/*.json.
+  // Service-account JSON (or base64) for Firestore. When set, accounts and classes are stored there instead of data/*.json.
   firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT || null,
-  // Set when students reach the server through a domain / reverse proxy instead of a LAN address (e.g. https://am.school.edu).
+  // Public address students use when served through a domain or reverse proxy (e.g. https://am.school.edu).
   publicUrl: process.env.PUBLIC_URL || null,
-  // A relative DATA_DIR (the .env.example default is ./data) is relative to the executable / working directory, never to
-  // wherever the process happened to be started from inside a packaged build.
+  // A relative DATA_DIR is relative to the executable / working directory, not to where the process was started.
   dataDir: bootstrap.resolveDataDir(paths),
   paths,
   // Secure cookies are dropped by browsers on plain http://. Set COOKIE_SECURE=false for http-only deployments.
@@ -56,7 +54,7 @@ module.exports = {
   sessionCookieName: 'attention.sid',
   // Idle timeout: every authenticated request pushes the expiry forward ("rolling" session).
   sessionIdleMs: (Number(process.env.SESSION_IDLE_HOURS) || 8) * 60 * 60 * 1000,
-  // Number of reverse-proxy hops in front of the app (0/unset = none). Needed for correct client IPs and secure cookies.
+  // Reverse-proxy hops in front of the app (0 = none). Needed for correct client IPs and secure cookies.
   trustProxy: process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) : false,
   // Bump when privacy.html changes in a way that needs students to agree again.
   consentVersion: '2026-10',

@@ -11,7 +11,7 @@ const passwordRule = z.string().min(8).max(72)
   .refine((p) => Buffer.byteLength(p, 'utf8') <= 72, 'Password is too long (72 bytes max)')
   .refine((p) => !COMMON_PASSWORDS.has(p.toLowerCase()), 'That password is too common. Choose something harder to guess.');
 
-// ---- shared field rules -----------------------------------------------------------------------------------------
+// ---- shared field rules ----
 // Display names are rendered in the educator dashboard: strip control characters and angle brackets (defence in depth
 // on top of the pages escaping their output), collapse whitespace, then require something to be left.
 const cleanName = (value) => String(value)
@@ -29,8 +29,7 @@ const emailRule = z.string().trim().toLowerCase().max(254).email('Enter a valid 
 // 6-8 upper-case letters/digits. Generated codes are 6 (see utils/classes.js); the range leaves room to grow.
 const classCodeRule = z.string().trim().toUpperCase().regex(/^[A-Z0-9]{6,8}$/, 'Class codes are 6 to 8 letters and numbers');
 
-// Older pages still send { legalName, username }. Map them onto { name, email } so the backend can ship before the
-// pages are updated; anything else unknown (e.g. a leftover `inviteCode`) is stripped by zod.
+// Older pages still send { legalName, username }: map them onto { name, email }. Unknown fields (e.g. a leftover `inviteCode`) are stripped by zod.
 const withLegacyAliases = (schema) => z.preprocess((raw) => {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return raw;
   const { legalName, username, ...rest } = raw;
@@ -41,17 +40,15 @@ const withLegacyAliases = (schema) => z.preprocess((raw) => {
   };
 }, schema);
 
-// ---- educator accounts ------------------------------------------------------------------------------------------
-// Self-hosted: whoever runs the server registers as the educator with name, email and password. Nothing in this
-// payload can create a student, and no invite code exists any more.
+// ---- educator accounts ----
+// Self-hosted: whoever runs the server registers as the educator. Nothing here can create a student; no invite code exists.
 const EducatorRegisterSchema = withLegacyAliases(z.object({
   name: nameRule,
   email: emailRule,
   password: passwordRule
 }));
 
-// Sign-in accepts an email OR a legacy username: educator accounts created before emails were required have a plain
-// username (3+ characters), and they must keep working. Only registration insists on a valid email.
+// Sign-in accepts an email OR a legacy username (accounts made before emails were required). Only registration needs an email.
 const LoginSchema = withLegacyAliases(z.object({
   email: z.string().trim().toLowerCase().min(3).max(254),
   password: z.string().min(1).max(72)
@@ -63,7 +60,7 @@ const DeleteAccountSchema = z.object({
   confirmEmail: z.string().trim().toLowerCase().max(100).optional()
 }).refine((d) => d.password || d.confirmEmail, { message: 'Confirm with your password (or your account email)' });
 
-// ---- classes ----------------------------------------------------------------------------------------------------
+// ---- classes ----
 const ClassCreationSchema = z.object({
   className: z.string().trim().min(3).max(100),
   schedule: z.string().trim().max(100).optional()
@@ -76,12 +73,11 @@ const ClassCreateSchema = z.object({
 
 const ClassIdParamSchema = z.object({ classId: z.string().uuid() });
 
-// ---- passwordless students --------------------------------------------------------------------------------------
+// ---- passwordless students ----
 // GET /api/extension/preconfigured?classCode=...
 const ClassCodeQuerySchema = z.object({ classCode: classCodeRule });
 
-// POST /api/extension/join. `consent` must be the boolean true: the privacy agreement is an explicit opt-in, never
-// implied. There is no password field; the route rejects one outright.
+// POST /api/extension/join. `consent` must be the boolean true (explicit opt-in). There is no password field; the route rejects one.
 const StudentJoinSchema = z.object({
   name: nameRule,
   email: emailRule,

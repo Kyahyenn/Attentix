@@ -18,8 +18,7 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Per-ACCOUNT limit on failed logins. The per-IP limit above does nothing against an attacker who rotates IPs
-// while guessing one educator's password. Generous enough (20 / 15 min) that a typo-prone user is never locked out.
+// Per-ACCOUNT limit on failed logins (the per-IP limit cannot stop an attacker who rotates IPs). 20 per 15 minutes.
 const accountLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
@@ -30,9 +29,8 @@ const accountLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Class codes are short, so guessing is throttled (failed lookups/joins only). Students have no account to key on, so
-// the key is the client IP. A whole classroom often shares one NAT IP and typos are common, hence the generous
-// ceiling: 60 misses per 15 minutes is still ~6,000 guesses a day against ~887 million possible codes.
+// Throttles class-code guessing (failed lookups/joins only), keyed by IP. Generous because a classroom shares one NAT IP
+// and typos are common: 60 misses per 15 minutes is still tiny against ~887 million possible codes.
 const joinLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
@@ -42,8 +40,7 @@ const joinLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Educator sign-up is open (the self-hosting professor creates the first account), so it is throttled per IP and
-// EVERY attempt counts, successful or not: nobody needs to create more than a handful of educator accounts an hour.
+// Educator sign-up is open, so it is throttled per IP and EVERY attempt counts, successful or not.
 const educatorSignupLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
@@ -52,8 +49,7 @@ const educatorSignupLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Extension heartbeats: one every 5 s is 180 per 15 minutes for a single student, so the global limit would starve them.
-// Keyed by student (bearer token), falling back to the IP.
+// Extension heartbeats arrive every 5 s (180 per 15 minutes per student), so they need their own limit. Keyed by bearer token, else IP.
 const heartbeatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
