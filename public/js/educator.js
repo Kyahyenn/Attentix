@@ -9,16 +9,31 @@
 
   const BASE_TITLE = document.title;
   let socket;
+  let enteredChannelKey = null;   // `${socket.id}:${classId}` of the room this connection has already asked to enter
   let currentUser = null;
   let currentClass = null;
   let latestStudents = [];
   let averageSamples = [];          // [{ label, value }]
   let lastAverageAt = 0;
 
+  // ---- auth redirects ----
+  // A sign-in redirect is forced ONLY by an explicit 401 (or the server's own "Authentication" socket refusal /
+  // "session revoked" event). A dropped connection, a timeout, a proxy page or a 5xx never signs the teacher out.
+  // window.AM.navigate is location.replace, so the dead dashboard entry leaves the history stack and the Back button
+  // can never bounce the teacher into a redirect loop. The latch makes sure only one redirect is ever started.
+  let redirecting = false;
+  function redirectOnce(url) {
+    if (redirecting) return;
+    redirecting = true;
+    if (socket) socket.close();
+    window.AM.navigate(url);
+  }
+  const isUnauthorized = (err) => Boolean(err) && err.status === 401;
+
   // Educator pages use the cookie session only: never attach a student token an earlier visit may have left in this tab.
   async function api(url, method, body) {
     try { return await baseApi(url, method, body, { bearer: false }); } catch (err) {
-      if (err.status === 401) window.location.href = '/login.html';
+      if (isUnauthorized(err)) redirectOnce('/login.html');
       throw err;
     }
   }
@@ -34,28 +49,74 @@
   const spell = (code) => String(code).split('').join(' '); // "ABC234" -> "A B C 2 3 4" for screen readers
 
   // ---- auth + socket ----
+  const AUTH_RETRY_BASE_MS = 1000;
+  const AUTH_RETRY_MAX_MS = 15000;
+  const AUTH_RETRY_JITTER_MS = 250;
+
+  // Resolves after `ms`, or as soon as the browser reports that the network is back.
+  const pauseUntilOnline = (ms) => new Promise((resolve) => {
+    const done = () => { clearTimeout(timer); window.removeEventListener('online', done); resolve(); };
+    const timer = setTimeout(done, ms);
+    window.addEventListener('online', done, { once: true });
+  });
+
+  // true  -> an educator is signed in (currentUser is set)
+  // false -> a redirect has been started: a 401, or a signed-in account that is not an educator
+  // Anything else (offline, timeout, 5xx, a captive-portal page that is not JSON) is retried with back-off and never
+  // signs the teacher out.
   async function checkAuth() {
-    try {
-      const data = await api('/api/me');
-      if (data.user.role !== 'educator') { window.location.href = '/join.html'; return false; }
-      currentUser = data.user;
-      setText('userName', `Signed in as ${currentUser.name}`);
-      return true;
-    } catch { window.location.href = '/login.html'; return false; }
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        const data = await api('/api/me');
+        if (!data || !data.user) throw new Error('Unexpected response from the server.');
+        if (data.user.role !== 'educator') { redirectOnce('/join.html'); return false; }
+        currentUser = data.user;
+        setText('userName', `Signed in as ${currentUser.name}`);
+        if (attempt > 0) setBadge('Connecting…', '');
+        return true;
+      } catch (err) {
+        if (isUnauthorized(err)) return false; // api() has already started the redirect
+        if (attempt === 0) toast('Cannot reach the server. Retrying…', true);
+        setBadge('Offline — retrying…', 'bad');
+        const delay = Math.min(AUTH_RETRY_MAX_MS, AUTH_RETRY_BASE_MS * (2 ** attempt)) + Math.random() * AUTH_RETRY_JITTER_MS;
+        await pauseUntilOnline(delay);
+      }
+    }
+  }
+
+  // Joins the class room on THIS connection exactly once. A buffered emit made before the socket connected would be
+  // followed by the 'connect' handler's own emit, so nothing is sent until the connection is up, and the key
+  // (connection id + class id) makes every further call for the same pair a no-op. A reconnect gets a new id, so it
+  // re-enters correctly.
+  function enterClassChannel(klass) {
+    if (!socket || !socket.connected || !klass) return;
+    const key = `${socket.id}:${klass.id}`;
+    if (enteredChannelKey === key) return;
+    enteredChannelKey = key;
+    socket.emit('educator:enterClass', { classId: klass.id }, (response) => {
+      if (response && response.ok) return;
+      if (enteredChannelKey === key) enteredChannelKey = null; // allow a retry
+      if (!currentClass || currentClass.id !== klass.id) return; // the teacher has moved on: no stale error
+      toast((response && response.error) || 'Unable to open class dashboard.', true);
+    });
   }
 
   function setupSocket() {
     socket = io();
     socket.on('connect', () => {
       setBadge('Live', 'good');
-      if (currentClass) socket.emit('educator:enterClass', { classId: currentClass.id });
+      enteredChannelKey = null; // a fresh connection has joined no room yet
+      if (currentClass) enterClassChannel(currentClass);
     });
     socket.on('connect_error', (err) => {
-      if (/Authentication/i.test(String(err.message))) window.location.href = '/login.html';
+      if (/Authentication/i.test(String(err.message))) redirectOnce('/login.html');
       else setBadge('Reconnecting…', 'bad');
     });
-    socket.on('disconnect', (reason) => { if (reason !== 'io server disconnect') setBadge('Reconnecting…', 'bad'); });
-    socket.on('session:revoked', () => { window.location.href = '/login.html'; });
+    socket.on('disconnect', (reason) => {
+      enteredChannelKey = null;
+      if (reason !== 'io server disconnect') setBadge('Reconnecting…', 'bad');
+    });
+    socket.on('session:revoked', () => { redirectOnce('/login.html'); });
     socket.on('class:update', (payload) => {
       if (!payload || !currentClass || payload.classId !== currentClass.id) return;
       latestStudents = Array.isArray(payload.students) ? payload.students : [];
@@ -106,25 +167,35 @@
     }, COPY_FEEDBACK_MS));
   }
 
+  // ---- downloads ----
+  // Hands a Blob to the browser as a file. The link is attached to the document before the click (some browsers and
+  // download-manager extensions ignore a detached link) and the object URL is released only after a generous delay,
+  // because the download starts asynchronously and an immediate revoke can cancel it.
+  const DOWNLOAD_REVOKE_DELAY_MS = 30000;
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = el('a', { href: url, download: filename, rel: 'noopener' });
+    link.hidden = true;
+    document.body.append(link);
+    try { link.click(); } finally {
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_REVOKE_DELAY_MS);
+    }
+  }
+
   // ---- pre-configured extension download ----
   // fetch + blob instead of a plain link so an expired session or an error shows a message instead of saving a JSON
   // error body as "Attentix-Extension-XXXXXX.zip".
   async function downloadExtension(klass) {
     try {
       const res = await fetch(`/api/extension/preconfigured?classCode=${encodeURIComponent(klass.classCode)}`, { credentials: 'same-origin' });
-      if (res.status === 401) { window.location.href = '/login.html'; return; }
+      if (res.status === 401) { redirectOnce('/login.html'); return; }
       if (!res.ok) {
         let message = 'Could not prepare the extension.';
         try { message = (await res.json()).error || message; } catch { /* not JSON */ }
         throw new Error(message);
       }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const link = el('a', { href: url, download: `Attentix-Extension-${klass.classCode}.zip` });
-      document.body.append(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      downloadBlob(await res.blob(), `Attentix-Extension-${klass.classCode}.zip`);
       const server = res.headers.get('X-Server-Url');
       toast(server ? `Extension downloaded, set up for ${server}` : 'Extension downloaded');
     } catch (err) {
@@ -410,6 +481,7 @@
   function leaveClass() {
     if (!currentClass && byId('classMissing').classList.contains('hidden')) return;
     currentClass = null;
+    enteredChannelKey = null;
     resetLiveView();
     byId('dashboardSection').classList.add('hidden');
     byId('classMissing').classList.add('hidden');
@@ -430,11 +502,7 @@
     setText('dashClassCodeSpoken', `Class code: ${spell(klass.classCode)}`);
     byId('dashboardClassTitle').focus();
     scheduleRender();
-    if (socket) {
-      socket.emit('educator:enterClass', { classId: klass.id }, (response) => {
-        if (!response || !response.ok) toast((response && response.error) || 'Unable to open class dashboard.', true);
-      });
-    }
+    enterClassChannel(klass);
   }
 
   // Keeps the open class's name/code current after the list is reloaded (a class is never renamed, but counts move).
@@ -444,19 +512,106 @@
     if (fresh) currentClass = fresh;
   }
 
-  async function syncRoute() {
+  // ---- class page: loading / error surface ----
+  // #panel-class is revealed by nav.js the moment the address names a class, long before the class list has arrived.
+  // This surface fills that gap. #classLoadingStatus is a polite live region that exists from the first paint, so the
+  // text put into it is announced; the visual spinner row (or the retry card) lives beside it and is not read twice.
+  let classLoadingParts = null;
+  function classLoadingSurface() {
+    if (classLoadingParts) return classLoadingParts;
+    const status = el('div', { id: 'classLoadingStatus', className: 'visually-hidden' });
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    const visual = el('div', { id: 'classLoadingVisual' });
+    const wrap = el('div', { id: 'classLoading', className: 'no-print' });
+    wrap.append(status, visual);
+    byId('classMissing').before(wrap);
+    classLoadingParts = { wrap, status, visual };
+    return classLoadingParts;
+  }
+
+  function showClassLoading(text) {
+    const { wrap, status, visual } = classLoadingSurface();
+    visual.replaceChildren(loadingRow(text));
+    status.textContent = text;
+    wrap.setAttribute('aria-busy', 'true');
+  }
+
+  function showClassLoadError(onRetry) {
+    const { wrap, status, visual } = classLoadingSurface();
+    const box = el('div', { className: 'card empty' });
+    const actions = el('div', { className: 'button-row' });
+    const retry = el('button', { type: 'button', className: 'btn btn-secondary' }, 'Try again');
+    retry.addEventListener('click', onRetry);
+    actions.append(retry);
+    box.append(emptyIcon('i-alert'), el('h2', {}, 'Could not load this class'), el('p', { className: 'error' }, 'The class list could not be loaded. Check the connection and try again.'), actions);
+    visual.replaceChildren(box);
+    status.textContent = 'Could not load this class.';
+    wrap.removeAttribute('aria-busy');
+  }
+
+  function hideClassLoading() {
+    if (!classLoadingParts) return;
+    classLoadingParts.visual.replaceChildren();
+    classLoadingParts.status.textContent = '';
+    classLoadingParts.wrap.removeAttribute('aria-busy');
+  }
+
+  // ---- route machine: #class/<id> ----
+  // ONE reconciliation runs at a time. Every trigger (am:tabchange, hashchange, init, a retry) only marks the machine
+  // dirty; the drain loop then re-reads the address and runs a fresh pass. Each pass re-checks the world AFTER its
+  // await (the address may have moved, the class may already be open), so two triggers for the same address cannot both
+  // reach showClass, and `educator:enterClass` is emitted once.
+  const routeMachine = { running: false, dirty: false, idle: Promise.resolve() };
+  const isClassOpen = (id) => Boolean(currentClass) && currentClass.id === id;
+
+  async function reconcileRoute() {
     if (!currentUser) return;
     const id = routeClassId();
-    if (!id) { leaveClass(); return; }
-    if (currentClass && currentClass.id === id) return;
+    if (!id) { hideClassLoading(); leaveClass(); return; }
+    if (isClassOpen(id)) return;
+
+    if (!classesLoaded) {
+      // Deep link / refresh: no class is on screen and nothing to look it up in yet. Show the placeholder at once.
+      leaveClass();
+      byId('classMissing').classList.add('hidden');
+      showClassLoading('Loading class…');
+    }
     await ensureClasses();
-    if (routeClassId() !== id) return; // the address changed while the list was loading
+
+    // ---- lifecycle check after the await ----
+    if (routeClassId() !== id) { routeMachine.dirty = true; return; } // the address moved on: run a fresh pass
+    if (isClassOpen(id)) { hideClassLoading(); return; }             // another pass already opened it
+    if (!classesLoaded) {
+      // The list failed to load. "Class not found" would be a lie: offer a retry instead.
+      leaveClass();
+      showClassLoadError(() => { classesReady = null; syncRoute(); });
+      return;
+    }
+    hideClassLoading();
     const klass = allClasses.find((k) => k.id === id);
     if (klass) { showClass(klass); return; }
     leaveClass();
     byId('dashboardSection').classList.add('hidden');
     byId('classMissing').classList.remove('hidden');
-    document.title = `Class not found · Attentix`;
+    document.title = 'Class not found · Attentix';
+  }
+
+  async function drainRoute() {
+    routeMachine.running = true;
+    try {
+      while (routeMachine.dirty) {
+        routeMachine.dirty = false;
+        try { await reconcileRoute(); } catch (err) { console.error('Route sync failed:', err); }
+      }
+    } finally { routeMachine.running = false; }
+  }
+
+  // Always returns the promise of the running drain, so `await syncRoute()` resolves once the machine is idle.
+  function syncRoute() {
+    routeMachine.dirty = true;
+    if (!routeMachine.running) routeMachine.idle = drainRoute();
+    return routeMachine.idle;
   }
 
   // ---- create class (dialog) ----
@@ -645,14 +800,18 @@
     return `"${str.replaceAll('"', '""')}"`;
   }
 
+  const CSV_BOM = '\uFEFF'; // makes Excel read the file as UTF-8 ("Peña", "Zoë" stay intact)
+
   async function exportCsv() {
     if (!currentClass) return;
+    const klass = currentClass;
     const ok = await confirmDialog({
       title: 'Export student data?',
       message: 'The file contains student names and engagement flags. Keep it private, share it only as your school’s policy allows, and delete it when you no longer need it.',
       confirmLabel: 'Export CSV'
     });
     if (!ok) return;
+    if (!currentClass || currentClass.id !== klass.id) return; // the teacher left this class while the dialog was open
     const rows = [['Name', 'Online', 'State', 'Score', 'Signals', 'Focus losses', 'Mouse idle seconds', 'Tab switches', 'Chat replies', 'Meeting chat msgs', 'Last activity']];
     latestStudents.forEach((s) => {
       const score = engagement.scoreOf(s);
@@ -665,11 +824,8 @@
         s.lastActivityAt ? new Date(s.lastActivityAt).toLocaleString() : ''
       ]);
     });
-    const csv = rows.map((row) => row.map(sanitizeCsvCell).join(',')).join('\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    const link = el('a', { href: url, download: `class-report-${currentClass.id}.csv` });
-    link.click();
-    URL.revokeObjectURL(url);
+    const csv = `${CSV_BOM}${rows.map((row) => row.map(sanitizeCsvCell).join(',')).join('\r\n')}\r\n`;
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `class-report-${klass.id}.csv`);
   }
 
   async function removeStudent(studentId, name) {
@@ -785,6 +941,8 @@
   });
 
   (async function init() {
+    classLoadingSurface(); // the live region must exist before its text changes
+    if (routeClassId()) showClassLoading('Loading class…'); // refreshed deep link: never leave the panel blank
     if (!(await checkAuth())) return;
     const savedSort = store.get(SORT_KEY);
     if ([...byId('classSort').options].some((o) => o.value === savedSort)) byId('classSort').value = savedSort;

@@ -2,6 +2,7 @@ const express = require('express');
 const { validate, ConsentSchema, StudentConsentSchema } = require('../utils/validation');
 const { requireAuth } = require('../middleware/auth');
 const { joinLimiter } = require('../middleware/limiter');
+const { identityFailureLimiter, settleUnlessBearer } = require('../middleware/identityGuard');
 const settings = require('../config/settings');
 const { isConsentCurrent, getConsent, recordConsent } = require('../utils/consent');
 const { resolveStudent } = require('../utils/accounts');
@@ -48,11 +49,16 @@ router.post('/consent', requireAuth, validate(ConsentSchema), async (req, res) =
 const pickConsentSchema = (req, res, next) =>
   validate(req.session && req.session.viaBearer ? ConsentSchema : StudentConsentSchema)(req, res, next);
 
-router.post('/student/consent', joinLimiter, pickConsentSchema, async (req, res) => {
+router.post('/student/consent', joinLimiter, pickConsentSchema, identityFailureLimiter, async (req, res) => {
+  const startedAt = Date.now();
   try {
     const found = await resolveStudent(req, req.body);
-    if (!found) return res.status(404).json({ error: 'No student found for that email and class code.' });
+    if (!found) {
+      await settleUnlessBearer(req, startedAt);
+      return res.status(404).json({ error: 'No student found for that email and class code.' });
+    }
     const record = await applyDecision(req, found.student.id, req.body.decision);
+    await settleUnlessBearer(req, startedAt);
     res.json({ message: 'Consent recorded successfully', accepted: record.accepted, version: record.version, timestamp: record.timestamp });
   } catch (err) {
     console.error('Student consent failed:', err);

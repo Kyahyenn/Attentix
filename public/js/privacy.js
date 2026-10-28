@@ -8,14 +8,82 @@
   'use strict';
   const { byId, setText, show, api, session, withBusy, toast, navigate, validateFields, clearFieldErrors, fieldError, parseFieldError } = window.AM;
 
-  // creds = { name?, email, classCode } when there is no token; omitted when a token is present.
-  const identity = (creds) => (session.has() || !creds ? {} : creds);
+  // ---- identity: ALWAYS both parts ----
+  // Without a bearer token a student is identified by BOTH an email and a class code, never by one of them and never
+  // by a name (the server ignores names too). Anything incomplete or malformed is refused here, before any request is
+  // sent, and only { email, classCode } ever leaves the page: a `name` that a caller still passes is dropped.
+  // These checks (and the cool-down below) are client-side courtesy only. They stop accidents and lazy scripts, not an
+  // attacker who talks to the API directly: the real enforcement is server-side (middleware/identityGuard.js).
+  const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const CLASS_CODE_SHAPE = /^[A-Z0-9]{6,8}$/;
+  const EMAIL_MAX = 254;
+  const NOT_FOUND_TEXT = 'No student found for that email and class code. Check them, or join the class first.';
+  const INCOMPLETE_TEXT = 'Enter both your email and your class code.';
 
+  const refusal = (message, status, code) => Object.assign(new Error(message), { status, code });
+
+  const normalizeCreds = (creds) => {
+    if (!creds || typeof creds !== 'object') return null;
+    const email = String(creds.email || '').trim().toLowerCase();
+    const classCode = String(creds.classCode || '').trim().toUpperCase();
+    if (!email || email.length > EMAIL_MAX || !EMAIL_SHAPE.test(email) || !CLASS_CODE_SHAPE.test(classCode)) return null;
+    return { email, classCode };
+  };
+
+  // The identity fields to send: nothing when a token vouches for the student, otherwise a complete normalised pair.
+  const identity = (creds) => {
+    if (session.has()) return {};
+    const pair = normalizeCreds(creds);
+    if (!pair) throw refusal(INCOMPLETE_TEXT, 400, 'IDENTITY_INCOMPLETE');
+    return pair;
+  };
+
+  // ---- client-side cool-down ----
+  // After a few misses in a row the page stops sending requests for a growing pause (5 s, 10 s, ... up to 5 min); a
+  // 429 from the server always means at least a minute. A success resets it. It lives in memory only (a reload clears
+  // it), which is why it is a courtesy and the server limiter is the control.
+  const FREE_MISSES = 3;
+  const BASE_PAUSE_MS = 5000;
+  const MAX_PAUSE_MS = 5 * 60 * 1000;
+  const RATE_LIMITED_PAUSE_MS = 60 * 1000;
+  const cooldown = { misses: 0, until: 0 };
+
+  const assertNotCoolingDown = () => {
+    const remaining = cooldown.until - Date.now();
+    if (remaining > 0) throw refusal(`Too many attempts. Wait ${Math.ceil(remaining / 1000)} seconds and try again.`, 429, 'CLIENT_COOLDOWN');
+  };
+  const noteMiss = (rateLimited) => {
+    cooldown.misses += 1;
+    const pause = cooldown.misses > FREE_MISSES ? Math.min(MAX_PAUSE_MS, BASE_PAUSE_MS * (2 ** (cooldown.misses - FREE_MISSES - 1))) : 0;
+    const wait = rateLimited ? Math.max(pause, RATE_LIMITED_PAUSE_MS) : pause;
+    if (wait) cooldown.until = Date.now() + wait;
+  };
+  const noteSuccess = () => { cooldown.misses = 0; cooldown.until = 0; };
+
+  // Runs `send(identityFields)`. Token holders skip the identity and cool-down logic entirely.
+  async function authorized(creds, send) {
+    if (session.has()) return send({});
+    const fields = identity(creds);
+    assertNotCoolingDown();
+    try {
+      const data = await send(fields);
+      noteSuccess();
+      return data;
+    } catch (err) {
+      if (err && (err.status === 404 || err.status === 401 || err.status === 429)) noteMiss(err.status === 429);
+      throw err;
+    }
+  }
+
+  // creds = { email, classCode } when there is no token; omitted when a token is present.
   // -> { student, class, consent: { accepted, version, timestamp }, status, timestamp }
-  const lookup = (creds) => api('/api/student/lookup', 'POST', identity(creds));
+  const lookup = (creds) => authorized(creds, (fields) => api('/api/student/lookup', 'POST', fields));
 
   // decision: 'accept' | 'decline'. Declining (withdrawing) stops monitoring at once and deletes the live data.
-  const setConsent = (decision, creds) => api('/api/student/consent', 'POST', { ...identity(creds), decision });
+  const setConsent = (decision, creds) => {
+    if (decision !== 'accept' && decision !== 'decline') return Promise.reject(refusal('Unknown consent decision.', 400, 'BAD_DECISION'));
+    return authorized(creds, (fields) => api('/api/student/consent', 'POST', { ...fields, decision }));
+  };
 
   const describeConsent = (consent) => {
     if (!consent || !consent.accepted) return 'Consent not given. Nothing is being monitored.';
@@ -23,7 +91,7 @@
     return `Consent given${when}. You can withdraw it at any time.`;
   };
 
-  window.AMPrivacy = { lookup, setConsent, describeConsent };
+  window.AMPrivacy = { lookup, setConsent, describeConsent, normalizeCreds };
 
   // ---- the privacy.html page ----
   if (!byId('decisionCard')) return;
@@ -52,7 +120,7 @@
     } catch (err) {
       if (err.status === 401) session.clear();
       showIdentify();
-      setText('identifyFormError', err.status === 404 || err.status === 401 ? 'No student found for that email and class code. Check them, or join the class first.' : err.message);
+      setText('identifyFormError', err.status === 404 || err.status === 401 ? NOT_FOUND_TEXT : err.message);
     }
   }
 
@@ -71,13 +139,15 @@
     clearFieldErrors(event.target);
     setText('identifyFormError', '');
     if (!validateFields([['identifyEmail', 'email'], ['identifyClassCode', 'classCode']])) return undefined;
-    creds = { email: byId('identifyEmail').value.trim(), classCode: codeInput.value.trim().toUpperCase() };
+    const pair = normalizeCreds({ email: byId('identifyEmail').value, classCode: codeInput.value });
+    if (!pair) { setText('identifyFormError', INCOMPLETE_TEXT); return undefined; } // both parts, every time
+    creds = pair;
     return withBusy(byId('identifyBtn'), async () => {
       try { showState((await lookup(creds)).consent); } catch (err) {
         creds = null;
         const { field, text } = parseFieldError(err.message, ['email', 'classCode']);
         if (field) { fieldError(field === 'email' ? 'identifyEmail' : 'identifyClassCode', text); return; }
-        setText('identifyFormError', err.status === 404 ? 'No student found for that email and class code. Check them, or join the class first.' : err.message);
+        setText('identifyFormError', err.status === 404 ? NOT_FOUND_TEXT : err.message);
       }
     }, 'Looking up…');
   });

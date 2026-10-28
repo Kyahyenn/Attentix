@@ -4,6 +4,7 @@ const settings = require('../config/settings');
 const engagement = require('../state/engagementState');
 const { requireEducator, requireStudent } = require('../middleware/auth');
 const { joinLimiter } = require('../middleware/limiter');
+const { identityFailureLimiter, settleUnlessBearer } = require('../middleware/identityGuard');
 const { validate, StudentLookupSchema } = require('../utils/validation');
 const { listEducatorClasses, classNameOf, describeClass, userDisplayName } = require('../utils/classes');
 const { resolveStudent, deleteAccountData } = require('../utils/accounts');
@@ -44,10 +45,14 @@ const pickLookupSchema = (req, res, next) =>
 
 // POST /api/student/lookup - READ-ONLY. A passwordless student sees their own class, consent and live engagement (the row an
 // educator sees, minus identifiers). Nothing is changed here, and `name` is never used to match.
-router.post('/student/lookup', joinLimiter, pickLookupSchema, async (req, res) => {
+router.post('/student/lookup', joinLimiter, pickLookupSchema, identityFailureLimiter, async (req, res) => {
+  const startedAt = Date.now();
   try {
     const found = await resolveStudent(req, req.body || {});
-    if (!found) return res.status(404).json({ error: 'No student found for that email and class code.' });
+    if (!found) {
+      await settleUnlessBearer(req, startedAt);
+      return res.status(404).json({ error: 'No student found for that email and class code.' });
+    }
     const { student, klass } = found;
 
     const [consent, educatorName] = await Promise.all([getConsent(student.id), userDisplayName(klass.educatorId)]);
@@ -58,6 +63,7 @@ router.post('/student/lookup', joinLimiter, pickLookupSchema, async (req, res) =
       status = view;
     }
 
+    await settleUnlessBearer(req, startedAt);
     res.json({
       student: { id: student.id, name: student.name, email: student.email },
       class: describeClass(klass, educatorName),
