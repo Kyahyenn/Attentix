@@ -6,8 +6,8 @@ computer. Total time: about 15 minutes.
 | Piece | Free service | What it does |
 | --- | --- | --- |
 | Code | GitHub | Holds your copy of the project |
-| Server | Render (free web service) | Runs Attentix at an `https://...onrender.com` address |
-| Storage | Firebase Firestore (Spark plan, no card) | Keeps accounts and classes (Render's free disk is wiped on restart) |
+| Server | Render | Runs Attentix at an `https://...onrender.com` address |
+| Storage | Firebase Firestore  | Keeps accounts and classes  |
 
 > Firebase alone cannot run Attentix: its free plan only hosts static pages, and Attentix needs a live server. So
 > Firebase stores the data and Render runs the server.
